@@ -122,8 +122,7 @@ if __name__ == "__main__":
                 X_test, forecast, mape = main(ticker, start_date, end_date, split_date, model_choice)
 
                 # Добавление результатов в интерфейс Streamlit
-                st.header('Прогнозирование данных с помощью Prophet')
-                st.write('Здесь можете увидеть результаты прогнозирования:')
+                st.header('Здесь можете увидеть результаты прогнозирования:')
                 st.write('Прогнозируемые значения:')
                 st.write(forecast['yhat'])
 
