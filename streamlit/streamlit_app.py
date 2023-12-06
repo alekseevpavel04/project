@@ -1,4 +1,5 @@
-import numpy as np
+from statsmodels.tsa.arima.model import ARIMA
+from pmdarima import AutoARIMA
 import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.base import BaseEstimator, TransformerMixin
@@ -60,6 +61,22 @@ class SimpleExpSmoothingModel(BaseEstimator, TransformerMixin):
         forecast = self.model.forecast(len(X))
         return pd.DataFrame({'ds': X['ds'], 'yhat': forecast})
 
+# Step 5: ARIMA Model
+class ARIMAModel(BaseEstimator, TransformerMixin):
+    def __init__(self):
+        self.model = None
+
+    def fit(self, X, y=None):
+        # Use AutoARIMA to find the best parameters
+        autoarima_model = AutoARIMA(trace=True, suppress_warnings=True, seasonal=False)
+        self.model = autoarima_model.fit(X['y'])
+        return self
+
+    def transform(self, X):
+        forecast = self.model.predict(n_periods=len(X))
+        return pd.DataFrame({'ds': X['ds'], 'yhat': forecast})
+
+
 def validate_date_format(date_text):
     try:
         datetime.strptime(date_text, '%Y-%m-%d')
@@ -88,7 +105,11 @@ def main(ticker, start_date, end_date, split_date, model_choice):
             ('preprocessor', DataPreprocessor()),
             ('simple_exp_smoothing_model', SimpleExpSmoothingModel())
         ])
-
+    elif model_choice == 'ARIMA':
+        pipeline = Pipeline([
+            ('preprocessor', DataPreprocessor()),
+            ('arima_model', ARIMAModel())
+        ])
 
     # Обучение pipeline на тренировочных данных
     pipeline.fit(X_train)
@@ -111,7 +132,7 @@ if __name__ == "__main__":
     start_date = st.text_input('Введите начальную дату (YYYY-MM-DD):', '2000-01-01')
     end_date = st.text_input('Введите конечную дату (YYYY-MM-DD):', '2023-01-01')
     split_date = st.text_input('Введите дату разделения на train и test (YYYY-MM-DD):', '2022-01-01')
-    model_choice = st.selectbox('Выберите модель', ['Prophet', 'Simple Exponential Smoothing'])
+    model_choice = st.selectbox('Выберите модель', ['Prophet', 'Simple Exponential Smoothing','ARIMA'])
 
     # Запуск основной функции при нажатии на кнопку
     if st.button('Прогнозировать'):
@@ -141,4 +162,4 @@ if __name__ == "__main__":
             except Exception as e:
                 st.markdown('<p style="font-size:20px; color:red;">Проверьте корректность введенных данных</p>', unsafe_allow_html=True)
 
-#streamlit run main.py
+#streamlit run streamlit_app.py
