@@ -45,7 +45,3 @@ https://project-ofkcggathcmvhkobltxcgq.streamlit.app/
  	Объем данных: С 01.01.2000 по 01.01.2023
   	Описание данных: Дневние данные (Adjusted Closing Price и Volume)
   	Данные находятся в ноутбуке ReceiveData 
-  	
-	
-### TODO:
-	1) Ссылку на репозиторий добавить в таблицу[TODO]
