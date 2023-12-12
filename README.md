@@ -1,7 +1,7 @@
 # project
 
 ### Проект можно попробовать тут:
-project-b83kwkb7rzapnazuxzcpnc.streamlit.app
+[project-b83kwkb7rzapnazuxzcpnc.streamlit.app](https://project-b83kwkb7rzapnazuxzcpnc.streamlit.app/)
 
 
 ## Описание проекта: 
