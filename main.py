@@ -161,4 +161,5 @@ if __name__ == "__main__":
             except Exception as e:
                 st.markdown('<p style="font-size:20px; color:red;">Проверьте корректность введенных данных</p>', unsafe_allow_html=True)
 
+
 #streamlit run main.py
