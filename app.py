@@ -1,3 +1,11 @@
+"""
+Это приложение app.py
+Представляет собой реализацию FastAPI
+Пример запроса находится в файле request.py
+"""
+
+
+
 from fastapi import FastAPI, HTTPException
 from typing import Optional
 from pydantic import BaseModel

@@ -1,3 +1,11 @@
+"""
+Это приложение main.py
+Представляет собой реализацию streamlit
+Запущен на сервере по ссылке: https://project-b83kwkb7rzapnazuxzcpnc.streamlit.app/
+"""
+
+
+
 from pmdarima import AutoARIMA
 import pandas as pd
 import matplotlib.pyplot as plt
