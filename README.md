@@ -3,8 +3,10 @@
 ### Проект можно попробовать тут:
 https://project-sqvh8uamorcsfkf7wkuxcu.streamlit.app/
 
-### Гиф проекта
+### Пример работы Streamlit
 ![Streamlit](https://recordit.co/tn00sAL946.gif)
+
+### Пример работы FastAPI
 ![FastAPI](https://recordit.co/1bm8U0LS1k.gif)
 
 ## Описание проекта: 
