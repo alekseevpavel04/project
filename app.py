@@ -7,14 +7,18 @@
 
 
 from fastapi import FastAPI, HTTPException
-from typing import Optional
 from pydantic import BaseModel
+
 from pmdarima import AutoARIMA
 import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.pipeline import Pipeline
 from prophet import Prophet
 from sklearn.metrics import mean_absolute_percentage_error
 import yfinance as yf
 from statsmodels.tsa.holtwinters import SimpleExpSmoothing
+
 
 app = FastAPI()
 
@@ -34,11 +38,23 @@ def download_data(ticker="AAPL", start_date='2000-01-01', end_date='2023-01-01')
     df_forecast = df_forecast[["ds", "y"]]
     return df_forecast
 
-class ProphetModel:
-    def __init__(self):
-        self.model = Prophet()
 
-    def fit(self, X):
+# Step 2: Preprocess data
+class DataPreprocessor(BaseEstimator, TransformerMixin):
+    def fit(self, X, y=None):
+        return self
+
+    def transform(self, X):
+        return X
+
+
+# Step 3: Prophet Model
+class ProphetModel(BaseEstimator, TransformerMixin):
+    def __init__(self):
+        self.model = None
+
+    def fit(self, X, y=None):
+        self.model = Prophet()
         self.model.fit(X)
         return self
 
@@ -46,7 +62,8 @@ class ProphetModel:
         forecast = self.model.predict(X)
         return forecast
 
-class SimpleExpSmoothingModel:
+# Step 4: Simple Exponential Smoothing Model
+class SimpleExpSmoothingModel(BaseEstimator, TransformerMixin):
     def __init__(self):
         self.model = None
 
@@ -59,11 +76,13 @@ class SimpleExpSmoothingModel:
         forecast = self.model.forecast(len(X))
         return pd.DataFrame({'ds': X['ds'], 'yhat': forecast})
 
-class ARIMAModel:
+# Step 5: ARIMA Model
+class ARIMAModel(BaseEstimator, TransformerMixin):
     def __init__(self):
         self.model = None
 
     def fit(self, X, y=None):
+        # Use AutoARIMA to find the best parameters
         autoarima_model = AutoARIMA(trace=True, suppress_warnings=True, seasonal=False)
         self.model = autoarima_model.fit(X['y'])
         return self
@@ -72,31 +91,43 @@ class ARIMAModel:
         forecast = self.model.predict(n_periods=len(X))
         return pd.DataFrame({'ds': X['ds'], 'yhat': forecast})
 
+# Main pipeline
 def main(ticker, start_date, end_date, split_date, model_choice):
+
+    # Загрузка данных
     data = download_data(ticker, start_date, end_date)
 
-    # split data...
-
+    # Разделение данных
     X_train = data.loc[data["ds"] < split_date]
     X_test = data.loc[data["ds"] >= split_date]
 
-    # define pipeline...
-
+    # Определение pipeline в зависимости от выбора модели
     if model_choice == 'Prophet':
-        pipeline = ProphetModel()
-        # ... rest of the code for Prophet model
+        pipeline = Pipeline([
+            ('preprocessor', DataPreprocessor()),
+            ('prophet_model', ProphetModel())
+        ])
     elif model_choice == 'Simple Exponential Smoothing':
-        pipeline = SimpleExpSmoothingModel()
-        # ... rest of the code for Simple Exponential Smoothing model
+        pipeline = Pipeline([
+            ('preprocessor', DataPreprocessor()),
+            ('simple_exp_smoothing_model', SimpleExpSmoothingModel())
+        ])
     elif model_choice == 'ARIMA':
-        pipeline = ARIMAModel()
-        # ... rest of the code for ARIMA model
+        pipeline = Pipeline([
+            ('preprocessor', DataPreprocessor()),
+            ('arima_model', ARIMAModel())
+        ])
 
+    # Обучение pipeline на тренировочных данных
     pipeline.fit(X_train)
+
+    # Прогноз с использованием pipeline
     forecast = pipeline.transform(X_test)
+
     mape = mean_absolute_percentage_error(X_test['y'], forecast['yhat']) * 100
 
     return X_test, forecast, mape
+
 
 @app.post("/predict")
 def predict(data: DataRequest):
@@ -105,3 +136,5 @@ def predict(data: DataRequest):
         return {"forecast": forecast['yhat'].tolist(), "mape": f"{mape:.2f}%"}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+#uvicorn app:app --reload

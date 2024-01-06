@@ -1,7 +1,7 @@
 """
 Это приложение main.py
 Представляет собой реализацию streamlit
-Запущен на сервере по ссылке: https://project-b83kwkb7rzapnazuxzcpnc.streamlit.app/
+Запущен на сервере по ссылке: https://project-sqvh8uamorcsfkf7wkuxcu.streamlit.app/
 """
 
 
@@ -36,7 +36,6 @@ class DataPreprocessor(BaseEstimator, TransformerMixin):
         return self
 
     def transform(self, X):
-        # Your preprocessing logic here
         return X
 
 

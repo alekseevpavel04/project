@@ -8,9 +8,9 @@ import requests
 # Данные для отправки на сервер
 data = {
     "ticker": "AAPL",
-    "start_date": "2020-01-01",
-    "end_date": "2021-01-01",
-    "split_date": "2020-07-01",
+    "start_date": "2000-01-01",
+    "end_date": "2023-01-01",
+    "split_date": "2022-01-01",
     "model_choice": "Prophet"  # Выберите модель: "Prophet", "Simple Exponential Smoothing", "ARIMA"
 }
 
