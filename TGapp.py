@@ -1,3 +1,9 @@
+"""
+Это приложение TGapp.py
+Представляет собой реализацию  FastAPI в телеграмме
+"""
+
+
 from telegram import Update
 import requests
 from telegram.ext import Updater, CommandHandler, MessageHandler, CallbackContext, Filters
