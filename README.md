@@ -1,7 +1,10 @@
 # project
 
-### Проект можно попробовать тут:
+### Проект можно попробовать тут (Streamlit):
 https://project-sqvh8uamorcsfkf7wkuxcu.streamlit.app/
+
+### Пример работы Telegram
+![Telegram](https://recordit.co/WJctzWtNyl.gif)
 
 ### Пример работы Streamlit
 ![Streamlit](https://recordit.co/tn00sAL946.gif)
