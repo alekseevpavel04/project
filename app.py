@@ -133,7 +133,7 @@ def main(ticker, start_date, end_date, split_date, model_choice):
 def predict(data: DataRequest):
     try:
         X_test, forecast, mape = main(data.ticker, data.start_date, data.end_date, data.split_date, data.model_choice)
-        return {"forecast": forecast['yhat'].tolist(), "mape": f"{mape:.2f}%"}
+        return {"actual_values": X_test['y'].tolist(),"forecast": forecast['yhat'].tolist(), "date":forecast['ds'].tolist(), "mape": f"{mape:.2f}%"}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
