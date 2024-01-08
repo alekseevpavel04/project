@@ -4,7 +4,7 @@
 https://project-sqvh8uamorcsfkf7wkuxcu.streamlit.app/
 
 ### Пример работы Telegram
-![Telegram](https://recordit.co/dO2nGU7IqC.gif)
+![Telegram](https://recordit.co/fcru4evIqU.gif)
 
 ### Пример работы Streamlit
 ![Streamlit](https://recordit.co/tn00sAL946.gif)
