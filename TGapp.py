@@ -24,6 +24,7 @@ class PredictionStates(StatesGroup):
     waiting_for_end_date = State()
     waiting_for_split_date = State()
     waiting_for_model_choice = State()
+    waiting_for_comment = State()
 
 async def create_prediction_button(message):
     keyboard = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
@@ -68,7 +69,7 @@ async def handle_split_date_input(message: types.Message, state: FSMContext):
         InlineKeyboardButton("Simple Exponential Smoothing", callback_data='Simple Exponential Smoothing'),
         InlineKeyboardButton("ARIMA", callback_data='ARIMA')
     )
-    await message.answer("Выберите модель для предсказания:", reply_markup=keyboard)
+    await message.answer("Выберите модель для предсказания (Без асинхронности):", reply_markup=keyboard)
     await PredictionStates.waiting_for_model_choice.set()
 
 @dp.callback_query_handler(lambda query: query.data in ['Prophet', 'Simple Exponential Smoothing', 'ARIMA'], state=PredictionStates.waiting_for_model_choice)
@@ -101,9 +102,10 @@ async def handle_model_choice(query: CallbackQuery, state: FSMContext):
             InlineKeyboardButton("Получить график", callback_data='get_graph'),
             InlineKeyboardButton("Получить оценку качества MAPE", callback_data='get_mape'),
             InlineKeyboardButton("Описательная статистика", callback_data='get_statistics'),
-            InlineKeyboardButton("Статистика использования", callback_data='get_usage_statistics')
+            InlineKeyboardButton("Статистика использования", callback_data='get_usage_statistics'),
+            InlineKeyboardButton("Отправить отзыв", callback_data='get_comments')
         )
-        await query.message.answer("Доступные действия:", reply_markup=keyboard)
+        await query.message.answer("Доступные действия (Асинхронность):", reply_markup=keyboard)
 
     elif response.status_code == 400:
         request_data = data  # Здесь сохраняем данные запроса
@@ -117,7 +119,7 @@ async def handle_model_choice(query: CallbackQuery, state: FSMContext):
     await create_prediction_button(query.message)
     await state.finish()  # Завершаем состояние FSMContext
 
-async def handle_button_press(query: types.CallbackQuery):
+async def handle_button_press(query: types.CallbackQuery, state: FSMContext):
     await query.answer()
     if query.data == 'get_forecast_files':
         await send_forecast_files(query)
@@ -129,6 +131,28 @@ async def handle_button_press(query: types.CallbackQuery):
         await send_statistics(query)
     elif query.data == 'get_usage_statistics':
         await send_usage_statistics(query)
+    elif query.data == 'get_comments':
+        await send_comments(query, state)
+
+def update_comments(comment):
+    file_path = "comments.txt"
+    try:
+        with open(file_path, 'a') as file:
+            file.write(comment + '\n')
+    except FileNotFoundError:
+        with open(file_path, 'w') as file:
+            file.write(comment + '\n')
+
+async def send_comments(query: CallbackQuery, state: FSMContext):
+    await query.message.answer(text="Пожалуйста, напишите свой отзыв.")
+    await state.set_state(PredictionStates.waiting_for_comment)
+
+@dp.message_handler(state=PredictionStates.waiting_for_comment)
+async def handle_comment(message: types.Message, state: FSMContext):
+    comment = message.text
+    update_comments(comment)
+    await message.answer(text="Ваш отзыв принят, спасибо!")
+    await state.finish()
 
 def save_statistics(statistics, filename):
     with open(filename, 'w') as file:
@@ -191,7 +215,6 @@ def plot_graph(data, forecast):
 async def send_graph(query: CallbackQuery):
     with open('forecast_plot.png', 'rb') as file:
         await query.message.answer_photo(file)
-
 
 def update_usage_statistics():
     file_path = "report.txt"
