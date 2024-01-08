@@ -1,77 +1,198 @@
-"""
-Это приложение TGapp.py
-Представляет собой реализацию  FastAPI в телеграмме
-"""
-
-import requests
+import asyncio
 import matplotlib.pyplot as plt
 import pandas as pd
-from telegram import Update, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
-from telegram.ext import Updater, CommandHandler, MessageHandler, CallbackContext, Filters
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import CallbackQueryHandler
+import numpy as np
+from scipy.stats import mode, skew, kurtosis
+import requests
+from aiogram import Bot, Dispatcher, types
+from aiogram.dispatcher import FSMContext
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardButton, InlineKeyboardMarkup
+from aiogram.contrib.fsm_storage.memory import MemoryStorage
+from aiogram.dispatcher.filters.state import State, StatesGroup
+from aiogram.types import CallbackQuery
+import json
 
-# Замените на ваш токен
 TELEGRAM_TOKEN = "6328278069:AAGMTGtt3FcRIdhrj0o8d1LxHgzjNFSTUHg"
+FASTAPI_URL  = 'http://127.0.0.1:8000/predict'
+bot = Bot(token=TELEGRAM_TOKEN)
+storage = MemoryStorage()
+dp = Dispatcher(bot, storage=storage)
 
-# URL сервера FastAPI
-FASTAPI_URL = 'http://127.0.0.1:8000/predict'
+class PredictionStates(StatesGroup):
+    waiting_for_ticker = State()
+    waiting_for_start_date = State()
+    waiting_for_end_date = State()
+    waiting_for_split_date = State()
+    waiting_for_model_choice = State()
 
-def start(update, context):
-    # Создаем кнопку "Создать предсказание"
-    keyboard = [[KeyboardButton("Создать предсказание")]]
-    reply_markup = ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
-    update.message.reply_text("Выберите действие:", reply_markup=reply_markup)
 
-def handle_prediction_start(update, context):
-    update.message.reply_text("Введите тикер (например, AAPL):")
 
-def handle_ticker(update, context):
-    context.user_data['ticker'] = update.message.text
-    update.message.reply_text("Введите начальную дату в формате YYYY-MM-DD (например, 2024-01-01):")
 
-def handle_start_date_input(update, context):
-    context.user_data['start_date'] = update.message.text
-    update.message.reply_text("Введите конечную дату в формате YYYY-MM-DD:")
+# Добавьте функцию для создания кнопки предсказания
+async def create_prediction_button(message):
+    keyboard = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
+    keyboard.add(KeyboardButton("Создать предсказание"))
+    await message.answer("Выберите действие:", reply_markup=keyboard)
 
-def handle_end_date_input(update, context):
-    context.user_data['end_date'] = update.message.text
-    update.message.reply_text("Введите дату разделения в формате YYYY-MM-DD:")
+async def start(message: types.Message):
+    await create_prediction_button(message)
 
-def handle_split_date_input(update, context):
-    context.user_data['split_date'] = update.message.text
-    keyboard = [
-        [KeyboardButton("Prophet")],
-        [KeyboardButton("Simple Exponential Smoothing")],
-        [KeyboardButton("ARIMA")]
-    ]
-    reply_markup = ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
-    update.message.reply_text("Выберите модель для предсказания:", reply_markup=reply_markup)
 
-def handle_button_press(update, context):
-    query = update.callback_query
-    query.answer()
+# Обновим обработчики состояний для соответствия новым классам состояний и функциям
+@dp.message_handler(state=PredictionStates.waiting_for_ticker)
+async def handle_ticker(message: types.Message, state: FSMContext):
+    context = await state.get_data()
+    context['ticker'] = message.text
+    await state.update_data(context)
+    await message.answer("Введите начальную дату в формате YYYY-MM-DD (например, 2024-01-01):")
+    await PredictionStates.waiting_for_start_date.set()
+
+@dp.message_handler(state=PredictionStates.waiting_for_start_date)
+async def handle_start_date_input(message: types.Message, state: FSMContext):
+    start_date = message.text
+    await state.update_data(start_date=start_date)
+    await message.answer("Введите конечную дату в формате YYYY-MM-DD:")
+    await PredictionStates.waiting_for_end_date.set()
+
+@dp.message_handler(state=PredictionStates.waiting_for_end_date)
+async def handle_end_date_input(message: types.Message, state: FSMContext):
+    end_date = message.text
+    await state.update_data(end_date=end_date)
+    await message.answer("Введите дату разделения в формате YYYY-MM-DD:")
+    await PredictionStates.waiting_for_split_date.set()
+
+@dp.message_handler(state=PredictionStates.waiting_for_split_date)
+async def handle_split_date_input(message: types.Message, state: FSMContext):
+    split_date = message.text
+    await state.update_data(split_date=split_date)
+    keyboard = InlineKeyboardMarkup(row_width=1)
+    keyboard.add(
+        InlineKeyboardButton("Prophet", callback_data='Prophet'),
+        InlineKeyboardButton("Simple Exponential Smoothing", callback_data='Simple Exponential Smoothing'),
+        InlineKeyboardButton("ARIMA", callback_data='ARIMA')
+    )
+    await message.answer("Выберите модель для предсказания:", reply_markup=keyboard)
+    await PredictionStates.waiting_for_model_choice.set()
+
+
+@dp.callback_query_handler(lambda query: query.data in ['Prophet', 'Simple Exponential Smoothing', 'ARIMA'], state=PredictionStates.waiting_for_model_choice)
+async def handle_model_choice(query: CallbackQuery, state: FSMContext):
+    await query.answer()
+    model_choice = query.data
+    await state.update_data(model_choice=model_choice)
+
+    await query.message.answer("Ожидайте...")
+    data = await state.get_data()
+    response = requests.post(FASTAPI_URL, json=data)
+
+    if response.status_code == 200:
+        update_usage_statistics()
+        result = response.json()
+        forecast = result['forecast']
+        mape = result['mape']
+        date = pd.to_datetime(result['date'], format='%Y-%m-%dT%H:%M:%S')
+        actual_values = result['actual_values']
+
+        statistics = calculate_statistics(actual_values)
+        save_statistics(statistics, "statistics.txt")
+        plot_graph(pd.DataFrame({'ds': date, 'y': actual_values}), pd.DataFrame({'ds': date, 'yhat': forecast}))
+        file_path = save_forecast_to_file(forecast)
+        save_mape(mape, "mape.txt")
+
+        keyboard = InlineKeyboardMarkup(row_width=1)
+        keyboard.add(
+            InlineKeyboardButton("Получить файлы с предсказаниями", callback_data='get_forecast_files'),
+            InlineKeyboardButton("Получить график", callback_data='get_graph'),
+            InlineKeyboardButton("Получить оценку качества MAPE", callback_data='get_mape'),
+            InlineKeyboardButton("Описательная статистика", callback_data='get_statistics'),
+            InlineKeyboardButton("Статистика использования", callback_data='get_usage_statistics')
+        )
+        await query.message.answer("Доступные действия:", reply_markup=keyboard)
+
+
+    elif response.status_code == 400:
+        request_data = data  # Здесь сохраняем данные запроса
+        json_data = json.dumps(request_data, indent=4, ensure_ascii=False)  # Преобразуем данные запроса в JSON-строку
+        await query.message.answer(
+            f"Ошибка 400: Неверный запрос. Пожалуйста, проверьте данные и попробуйте еще раз:\n\n{json_data}")
+
+    else:
+        await query.message.answer(f"Ошибка при выполнении запроса: {response.status_code}")
+
+    await create_prediction_button(query.message)
+    await state.finish()  # Завершаем состояние FSMContext
+
+async def handle_button_press(query: types.CallbackQuery):
+    await query.answer()
 
     if query.data == 'get_forecast_files':
-        send_forecast_files(query)
+        await send_forecast_files(query)
     elif query.data == 'get_graph':
-        send_graph(query)
+        await send_graph(query)
     elif query.data == 'get_mape':
-        send_mape(query, context)
+        await send_mape(query)
+    elif query.data == 'get_statistics':
+        await send_statistics(query)
+    elif query.data == 'get_usage_statistics':
+        await send_usage_statistics(query)
 
-def send_forecast_files(query):
-    file_path = 'forecast_results.txt'
-    with open(file_path, 'rb') as file:
-        query.bot.send_document(chat_id=query.message.chat_id, document=file)
 
-def send_graph(query):
-    with open('forecast_plot.png', 'rb') as file:
-        query.bot.send_photo(chat_id=query.message.chat_id, photo=file)
+async def send_usage_statistics(query: CallbackQuery):
+    file_path = "report.txt"
+    try:
+        with open(file_path, 'r') as file:
+            usage_count = int(file.read())
+            await query.message.answer(f"Количество успешных запусков: {usage_count}")
+    except FileNotFoundError:
+        await query.message.answer("Статистика использования сервиса недоступна")
 
-def handle_prediction_choice(update, context):
-    # Обработка выбора пользователя по кнопке "Сделать предсказание"
-    context.user_data.clear()  # Очистка данных пользователя
-    start(update, context)  # Начало процесса предсказания
+def calculate_statistics(data):
+    statistics = {
+        'Mean': np.mean(data),
+        'Standard Error': np.std(data, ddof=1) / np.sqrt(len(data)),
+        'Median': np.median(data),
+        'Standard Deviation': np.std(data, ddof=1),
+        'Variance': np.var(data, ddof=1),
+        'Excess': kurtosis(data),
+        'Skewness': skew(data),
+        'Range': np.max(data) - np.min(data),
+        'Minimum': np.min(data),
+        'Maximum': np.max(data),
+        'Count': len(data)
+    }
+    return statistics
+
+
+# Сохранение статистики в файл
+def save_statistics(statistics, filename):
+    with open(filename, 'w') as file:
+        for key, value in statistics.items():
+            file.write(f"{key}: {value}\n")
+
+
+async def send_statistics(query: CallbackQuery):
+    # Отправка файла со статистикой
+    file_path = 'statistics.txt'
+    with open(file_path, 'r') as file:
+        statistics_content = file.read()
+        await query.message.answer(text=f"Описательная статистика:\n{statistics_content}")
+
+
+
+async def handle_prediction_start(message: types.Message):
+    await message.answer("Введите тикер (например, AAPL):")
+
+def plot_graph(data, forecast):
+    plt.figure(figsize=(10, 6))
+    plt.plot(data['ds'], data['y'], label='Реальные данные')
+    plt.plot(forecast['ds'], forecast['yhat'], label='Предсказанные данные')
+    plt.xlabel('Дата')
+    plt.ylabel('Значение')
+    plt.legend()
+    plt.title('Предсказание временных рядов')
+    plt.xticks(rotation=90)
+    plt.tight_layout()
+    plt.savefig('forecast_plot.png')
 
 def save_forecast_to_file(forecast_values):
     # Создание строки с предсказаниями
@@ -86,92 +207,73 @@ def save_mape(mape, filename):
     with open(filename, 'w') as file:
         file.write(str(mape))
 
-def send_mape(query, context):
+async def send_forecast_files(query: CallbackQuery):
+    file_path = 'forecast_results.txt'
+    with open(file_path, 'rb') as file:
+        await query.message.answer_document(file)
+
+async def send_graph(query: CallbackQuery):
+    with open('forecast_plot.png', 'rb') as file:
+        await query.message.answer_photo(file)
+
+async def send_mape(query: CallbackQuery):
     file_path = 'mape.txt'
     with open(file_path, 'r') as file:
         mape_content = file.read()
-        query.bot.send_message(chat_id=query.message.chat_id, text=f"Оценка MAPE: {mape_content}")
+        await query.message.answer(text=f"Оценка MAPE: {mape_content}")
 
+def update_usage_statistics():
+    file_path = "report.txt"
+    try:
+        with open(file_path, 'r') as file:
+            usage_count = int(file.read())
+    except FileNotFoundError:
+        usage_count = 0
+        with open(file_path, 'w') as file:
+            file.write(str(usage_count))
 
-def plot_graph(data, forecast):
-    plt.figure(figsize=(10, 6))
-    plt.plot(data['ds'], data['y'], label='Реальные данные')
-    plt.plot(forecast['ds'], forecast['yhat'], label='Предсказанные данные')
-    plt.xlabel('Дата')
-    plt.ylabel('Значение')
-    plt.legend()
-    plt.title('Предсказание временных рядов')
-    plt.xticks(rotation=90)
-    plt.tight_layout()
-    plt.savefig('forecast_plot.png')
+    usage_count += 1
 
-def handle_model_choice(update, context):
-    context.user_data['model_choice'] = update.message.text
-    update.message.reply_text("Выполняется прогнозирование...")
-    data = context.user_data
-    response = requests.post(FASTAPI_URL, json=data)
+    with open(file_path, 'w') as file:
+        file.write(str(usage_count))
 
-    if response.status_code == 200:
-        result = response.json()
-        forecast = result['forecast']
-        mape = result['mape']
-        date = pd.to_datetime(result['date'], format='%Y-%m-%dT%H:%M:%S')
-        actual_values =result['actual_values']
+async def echo(message: types.Message, state: FSMContext):
+    text = message.text
+    state_data = await state.get_data()
 
-        # Сохраняем результаты
-        plot_graph(pd.DataFrame({'ds': date, 'y': actual_values}), pd.DataFrame({'ds': date, 'yhat': forecast}))
-        save_forecast_to_file(forecast)
-        save_mape(mape, "mape.txt")
-
-
-        # Создаем инлайн-кнопки для выбора действий пользователя
-        keyboard = [
-            [InlineKeyboardButton("Получить файлы с предсказаниями", callback_data='get_forecast_files')],
-            [InlineKeyboardButton("Получить график", callback_data='get_graph')],
-            [InlineKeyboardButton("Получить оценку качества MAPE", callback_data='get_mape')]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        update.message.reply_text("Выберите действие:", reply_markup=reply_markup)
-
-
-    else:
-        update.message.reply_text(f"Ошибка при выполнении запроса: {response.status_code}")
-    update.message.reply_text("Для анализа следующего тикера, нажмите кнопку <Создать предсказание>:", reply_markup=ReplyKeyboardMarkup([[KeyboardButton("Создать предсказание")]], one_time_keyboard=True))
-    context.user_data.clear()
-
-
-def echo(update, context):
-    text = update.message.text
     if text == "/start":
-        start(update, context)
+        await start(message)
     elif text == "Создать предсказание":
-        handle_prediction_start(update, context)
-    elif 'ticker' not in context.user_data:
-        handle_ticker(update, context)
-    elif 'ticker' in context.user_data and 'start_date' not in context.user_data:
-        handle_start_date_input(update, context)
-    elif 'start_date' in context.user_data and 'end_date' not in context.user_data:
-        handle_end_date_input(update, context)
-    elif 'end_date' in context.user_data and 'split_date' not in context.user_data:
-        handle_split_date_input(update, context)
-    elif 'split_date' in context.user_data and 'model_choice' not in context.user_data:
-        handle_model_choice(update, context)
+        await handle_prediction_start(message)
+    elif 'ticker' not in state_data:
+        await handle_ticker(message, state)
+    elif 'ticker' in state_data and 'start_date' not in state_data:
+        await handle_start_date_input(message, state)
+    elif 'start_date' in state_data and 'end_date' not in state_data:
+        await handle_end_date_input(message, state)
+    elif 'end_date' in state_data and 'split_date' not in state_data:
+        await handle_split_date_input(message, state)
+    elif 'split_date' in state_data and 'model_choice' not in state_data:
+        await handle_model_choice(message, state)
     else:
-        update.message.reply_text("Что-то пошло не так. Попробуйте снова.")
+        await message.answer("Что-то пошло не так. Попробуйте снова.")
 
-def main():
-    # Создаем объект для взаимодействия с Telegram API
-    updater = Updater(TELEGRAM_TOKEN, use_context=True)
-    dispatcher = updater.dispatcher
-    # Регистрируем обработчики команд
-    dispatcher.add_handler(CommandHandler("start", start))
-    dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, echo))
-    # Добавляем обработчики для инлайн-кнопок
-    dispatcher.add_handler(CallbackQueryHandler(handle_button_press))
-    # Запускаем бота
-    updater.start_polling()
-    # Остановка бота при нажатии Ctrl + C
-    updater.idle()
+
+
+# Обновим функцию main для запуска бота и обработки состояний
+async def main():
+    dp.register_message_handler(start, commands="start")
+    dp.register_message_handler(echo, commands=None)
+    dp.register_callback_query_handler(handle_button_press)
+    await dp.start_polling()
+    await dp.idle()
 
 if __name__ == '__main__':
-    main()
+    loop = asyncio.get_event_loop()
+    try:
+        loop.run_until_complete(main())
+    except KeyboardInterrupt:
+        pass
+    finally:
+        loop.run_until_complete(dp.bot.close())
+        loop.close()
