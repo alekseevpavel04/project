@@ -4,13 +4,13 @@
 https://project-sqvh8uamorcsfkf7wkuxcu.streamlit.app/
 
 ### Пример работы Telegram
-![Telegram](https://recordit.co/WJctzWtNyl.gif)
+![fcru4evIqU](https://github.com/alekseevpavel04/project/assets/48567496/99fc05d6-f85c-4300-9895-5a97775664a2)
 
 ### Пример работы Streamlit
-![Streamlit](https://recordit.co/tn00sAL946.gif)
+![Streamlit](http://g.recordit.co/tn00sAL946.gif)
 
 ### Пример работы FastAPI
-![FastAPI](https://recordit.co/1bm8U0LS1k.gif)
+![FastAPI](http://g.recordit.co/1bm8U0LS1k.gif)
 
 ## Описание проекта: 
 Проект предсказания стоимости акций направлен на создание модели машинного обучения и нейронной сети для прогнозирования цен акций. Проект будет включать в себя разведочный анализ данных и первичную аналитику данных, моделирование с использованием методов машинного обучения и глубокого обучения, анализ результатов.
