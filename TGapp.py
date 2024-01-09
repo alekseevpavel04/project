@@ -1,3 +1,9 @@
+"""
+Это приложение TGapp.py
+Представляет собой реализацию в телеграме
+"""
+
+
 import asyncio
 import matplotlib.pyplot as plt
 import pandas as pd
