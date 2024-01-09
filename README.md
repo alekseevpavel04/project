@@ -4,7 +4,8 @@
 https://project-sqvh8uamorcsfkf7wkuxcu.streamlit.app/
 
 ### Пример работы Telegram
-![fcru4evIqU](https://github.com/alekseevpavel04/project/assets/48567496/99fc05d6-f85c-4300-9895-5a97775664a2)
+![W20Txi1dze](https://github.com/alekseevpavel04/project/assets/48567496/ebc34fe9-bd67-4d07-87ea-9aa01affe663)
+
 
 ### Пример работы Streamlit
 ![Streamlit](http://g.recordit.co/tn00sAL946.gif)
