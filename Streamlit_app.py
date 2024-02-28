@@ -1,5 +1,5 @@
 """
-Это приложение main.py
+Это приложение Streamlit_app.py
 Представляет собой реализацию streamlit
 Запущен на сервере по ссылке: https://project-sqvh8uamorcsfkf7wkuxcu.streamlit.app/
 """
