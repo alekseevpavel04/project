@@ -1,6 +1,6 @@
 # project
 
-### Пример работы Telegram
+### Пример работы бота Telegram (устарело)
 ![W20Txi1dze](https://github.com/alekseevpavel04/project/assets/48567496/ebc34fe9-bd67-4d07-87ea-9aa01affe663)
 
 ## Описание проекта: 
