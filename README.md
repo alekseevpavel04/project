@@ -1,6 +1,6 @@
 # project
 
-### Пример работы бота Telegram (устарело)
+### Пример работы бота Telegram
 ![TG](https://github.com/alekseevpavel04/project/assets/48567496/05373a72-0fff-41ca-bc05-829ad110c418)
 
 ## Описание проекта: 
