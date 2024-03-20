@@ -1,0 +1,22 @@
+version: '3'
+
+services:
+  telegram_bot:
+    build: ./Telegram_app
+    ports:
+      - "8443:8000"
+    depends_on:
+      - fastapi_app
+    networks:
+      - mynetwork
+
+  fastapi_app:
+    build: ./FastAPI_app
+    ports:
+      - "8000:8000"
+    networks:
+      - mynetwork
+
+networks:
+  mynetwork:
+    driver: bridge

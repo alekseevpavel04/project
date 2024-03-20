@@ -7,3 +7,6 @@
 out
 gen
 /venv
+/models
+test.ipynb
+./requirements.txt
