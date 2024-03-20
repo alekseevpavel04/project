@@ -1,9 +1,12 @@
 # Use the official Ubuntu image from the Docker Hub
 FROM ubuntu:latest
 
+# Set environment variable to prevent interactive prompts
+ENV DEBIAN_FRONTEND=noninteractive
+
 # Install system packages
 RUN apt-get update \
-    && apt-get install -y python3-pip libgomp1 \
+    && apt-get install -y python3-pip libgomp1 postgresql \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 

@@ -5,8 +5,10 @@ services:
     build: ./Telegram_app
     ports:
       - "8443:8000"
+      - "8444:5432"
     depends_on:
       - fastapi_app
+      - postgres
     networks:
       - mynetwork
 
@@ -14,6 +16,17 @@ services:
     build: ./FastAPI_app
     ports:
       - "8000:8000"
+    networks:
+      - mynetwork
+
+  postgres:
+    image: postgres
+    environment:
+      POSTGRES_USER: alekseev_db
+      POSTGRES_PASSWORD: alekseev_db
+      POSTGRES_DB: statistics_db
+    ports:
+      - "5432:5432"
     networks:
       - mynetwork
 
