@@ -13,18 +13,10 @@ from aiogram.types import BufferedInputFile
 
 TELEGRAM_TOKEN = "6844280738:AAGGwtFpu7UvF-srORj2Az2E-IBWKG4vaPs"
 FASTAPI_URL = 'http://fastapi_app:8000/predict'
-#FASTAPI_URL = 'http://127.0.0.1:8000/predict'
+# FASTAPI_URL = 'http://127.0.0.1:8000/predict'
 bot = Bot(token=TELEGRAM_TOKEN)
 dp = Dispatcher()
 
-# TODO: Спрятать токер
-# TODO: Разные ошибки, когда сервер не ответил и когда не те данные
-# TODO: Сделать отчет по изменениям рынка за день
-# TODO: Добавить календарь дивидендов
-# TODO: Улучшить прогнозы аналитиков. Пример: https://vc.ru/money/292787-kak-telegram-boty-pomogayut-investoru-obzor-poleznyh-i-besplatnyh-botov
-# TODO: Для любителей подсмотреть за Кэтрин Вуд. Пример: https://vc.ru/money/292787-kak-telegram-boty-pomogayut-investoru-obzor-poleznyh-i-besplatnyh-botov
-# TODO: Получение уведомлений по рыночным инструментам. Пример в комментариях к: https://vc.ru/money/292787-kak-telegram-boty-pomogayut-investoru-obzor-poleznyh-i-besplatnyh-botov
-# TODO: Отчетность по компании
 
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message):
@@ -32,6 +24,7 @@ async def cmd_start(message: types.Message):
         "Привет! Я бот, созданный для того, чтобы помогать вам.\n"
         "/help - Получить справку о доступных действиях\n"
     )
+
 
 @dp.message(Command("help"))
 async def cmd_help(message: types.Message):
@@ -46,6 +39,7 @@ async def cmd_help(message: types.Message):
     )
     await message.answer(help_text)
 
+
 @dp.message(Command('predict'))
 async def handle_predict(message: types.Message):
     command_args = message.text[len('/predict '):].split(";")
@@ -57,7 +51,11 @@ async def handle_predict(message: types.Message):
         result = response.json()
         await message.answer(f"Прогнозируемые значения: \n {result}")
     else:
-        await message.answer("При выполнении запроса произошла ошибка. Проверьте корректность введенных данных. Пример корректного использования: /predict AAPL")
+        await message.answer(
+            'При выполнении запроса произошла ошибка. '
+            'Проверьте корректность введенных данных. '
+            'Пример корректного использования: /predict AAPL')
+
 
 @dp.message(Command('last'))
 async def handle_last(message: types.Message):
@@ -69,7 +67,7 @@ async def handle_last(message: types.Message):
         moscow_timezone = timezone('Europe/Moscow')
         history.index = history.index.tz_convert(moscow_timezone)
         timestamp_str = history.index[0].strftime('%Y-%m-%d %H:%M:%S %Z')
-        close = round(history["Close"].values[0],5)
+        close = round(history["Close"].values[0], 5)
         response_text = f"Данные о последних торгах для {ticker}:\n"
         response_text += f"Метка времени: {timestamp_str} (UTC+3):\n"
         response_text += f"Previous Close price: ${info['previousClose']}\n"
@@ -78,7 +76,11 @@ async def handle_last(message: types.Message):
 
         await message.answer(response_text)
     except Exception as e:
-        await message.answer("При выполнении запроса произошла ошибка. Проверьте корректность введенных данных. Пример корректного использования: /last AAPL")
+        await message.answer(
+            'При выполнении запроса произошла ошибка. '
+            'Проверьте корректность введенных данных. '
+            'Пример корректного использования: /last AAPL. '
+            f'Режим отладки. Ошибка: {e}')
 
 
 @dp.message(Command('info'))
@@ -86,23 +88,28 @@ async def handle_info(message: types.Message):
     ticker = message.text[len('/last '):].strip().upper()
     try:
         stock = yf.Ticker(ticker)
-        longName = stock.info["longName"]
+        longname = stock.info["longName"]
         symbol = stock.info["symbol"]
-        longBusinessSummary = stock.info["longBusinessSummary"]
+        long_business_summary = stock.info["longBusinessSummary"]
         website = stock.info["website"]
         sector = stock.info["sector"]
 
         response_text = (
-            f"Название компании: {longName}\n"
+            f"Название компании: {longname}\n"
             f"Тикер: {symbol}\n"
             f"Сайт: {website}\n"
             f"Сектор: {sector}\n"
-            f"Описание компании: \n{longBusinessSummary}\n"
+            f"Описание компании: \n{long_business_summary}\n"
         )
 
         await message.answer(response_text)
     except Exception as e:
-        await message.answer("При выполнении запроса произошла ошибка. Проверьте корректность введенных данных. Пример корректного использования: /info AAPL")
+        await message.answer(
+            "При выполнении запроса произошла ошибка. "
+            "Проверьте корректность введенных данных. "
+            "Пример корректного использования: /info AAPL. "
+            f'Режим отладки. Ошибка: {e}')
+
 
 @dp.message(Command('recommendations'))
 async def handle_recommendations(message: types.Message):
@@ -112,25 +119,25 @@ async def handle_recommendations(message: types.Message):
         data = stock.recommendations
 
         periods = []
-        strongBuys = []
+        strong_buys = []
         buys = []
         holds = []
         sells = []
-        strongSells = []
+        strong_sells = []
 
         for period, values in data.iterrows():
             periods.append(period)
-            strongBuys.append(values['strongBuy'])
+            strong_buys.append(values['strongBuy'])
             buys.append(values['buy'])
             holds.append(values['hold'])
             sells.append(values['sell'])
-            strongSells.append(values['strongSell'])
+            strong_sells.append(values['strongSell'])
 
-        strongBuys = strongBuys[::-1]
+        strong_buys = strong_buys[::-1]
         buys = buys[::-1]
         holds = holds[::-1]
         sells = sells[::-1]
-        strongSells = strongSells[::-1]
+        strong_sells = strong_sells[::-1]
 
         # Создаем цветовую карту
         colors = ['red', 'orange', 'yellow', 'lightgreen', 'green']
@@ -148,12 +155,12 @@ async def handle_recommendations(message: types.Message):
 
         plt.figure(figsize=(8, 7))
 
-        plt.bar(periods, strongSells, color=cmap(0), label='Strong Sell')
-        plt.bar(periods, sells, bottom=strongSells, color=cmap(1), label='Sell')
-        plt.bar(periods, holds, bottom=[i + j for i, j in zip(strongSells, sells)], color=cmap(2), label='Hold')
-        plt.bar(periods, buys, bottom=[i + j + k for i, j, k in zip(strongSells, sells, holds)], color=cmap(3),
+        plt.bar(periods, strong_sells, color=cmap(0), label='Strong Sell')
+        plt.bar(periods, sells, bottom=strong_sells, color=cmap(1), label='Sell')
+        plt.bar(periods, holds, bottom=[i + j for i, j in zip(strong_sells, sells)], color=cmap(2), label='Hold')
+        plt.bar(periods, buys, bottom=[i + j + k for i, j, k in zip(strong_sells, sells, holds)], color=cmap(3),
                 label='Buy')
-        plt.bar(periods, strongBuys, bottom=[i + j + k + l for i, j, k, l in zip(strongSells, sells, holds, buys)],
+        plt.bar(periods, strong_buys, bottom=[i + j + k + l for i, j, k, l in zip(strong_sells, sells, holds, buys)],
                 color=cmap(4), label='Strong Buy')
 
         plt.xlabel('Period')
@@ -169,19 +176,18 @@ async def handle_recommendations(message: types.Message):
 
         # Добавляем метки данных
         for i in range(len(periods)):
-            total_height = strongSells[i] + sells[i] + holds[i] + buys[i] + strongBuys[i]
-            if strongSells[i] > 0:
-                plt.text(periods[i], strongSells[i] / 2, str(strongSells[i]), ha='center', va='center')
+            if strong_sells[i] > 0:
+                plt.text(periods[i], strong_sells[i] / 2, str(strong_sells[i]), ha='center', va='center')
             if sells[i] > 0:
-                plt.text(periods[i], strongSells[i] + sells[i] / 2, str(sells[i]), ha='center', va='center')
+                plt.text(periods[i], strong_sells[i] + sells[i] / 2, str(sells[i]), ha='center', va='center')
             if holds[i] > 0:
-                plt.text(periods[i], strongSells[i] + sells[i] + holds[i] / 2, str(holds[i]), ha='center', va='center')
+                plt.text(periods[i], strong_sells[i] + sells[i] + holds[i] / 2, str(holds[i]), ha='center', va='center')
             if buys[i] > 0:
-                plt.text(periods[i], strongSells[i] + sells[i] + holds[i] + buys[i] / 2, str(buys[i]), ha='center',
+                plt.text(periods[i], strong_sells[i] + sells[i] + holds[i] + buys[i] / 2, str(buys[i]), ha='center',
                          va='center')
-            if strongBuys[i] > 0:
-                plt.text(periods[i], strongSells[i] + sells[i] + holds[i] + buys[i] + strongBuys[i] / 2,
-                         str(strongBuys[i]), ha='center', va='center')
+            if strong_buys[i] > 0:
+                plt.text(periods[i], strong_sells[i] + sells[i] + holds[i] + buys[i] + strong_buys[i] / 2,
+                         str(strong_buys[i]), ha='center', va='center')
 
         plt.tight_layout()
 
@@ -192,11 +198,15 @@ async def handle_recommendations(message: types.Message):
         plt.close()
         buffer_data = buffer.getvalue()
 
-        photo = BufferedInputFile(buffer_data,"recommendations.png")
+        photo = BufferedInputFile(buffer_data, "recommendations.png")
         await message.answer_photo(photo=photo)
 
     except Exception as e:
-        await message.answer(f'При выполнении запроса произошла ошибка: {e}. Проверьте корректность введенных данных. Пример корректного использования: /recommendations AAPL')
+        await message.answer(
+            "При выполнении запроса произошла ошибка. "
+            "Проверьте корректность введенных данных. "
+            "Пример корректного использования: /recommendations AAPL. "
+            f'Режим отладки. Ошибка: {e}')
 
 
 async def main():
