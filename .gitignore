@@ -1,12 +1,23 @@
 ### Example user template template
 ### Example user template
 
-# IntelliJ project files
+# int
 .idea
 *.iml
 out
 gen
+*.py[cod]
+db.sqlite3
+migrations/
+media/
+settings.py
+
+#my
 /venv
 /models
+/.ipynb_checkpoints
+/Notebooks/.ipynb_checkpoints
+/Notebooks/ML_model_analysis_test.ipynb
 test.ipynb
-./requirements.txt
+requirements.txt
+__pycache__/
