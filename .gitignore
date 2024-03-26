@@ -21,3 +21,5 @@ settings.py
 test.ipynb
 requirements.txt
 __pycache__/
+/Test/.pytest_cache
+/Test/anon.session

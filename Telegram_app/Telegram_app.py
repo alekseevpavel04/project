@@ -16,6 +16,7 @@ from datetime import datetime, timedelta
 import pandas as pd
 import tempfile
 from sqlalchemy import text
+from sqlalchemy import BigInteger
 
 TELEGRAM_TOKEN = "6844280738:AAGGwtFpu7UvF-srORj2Az2E-IBWKG4vaPs"
 FASTAPI_URL = 'http://fastapi_app:8000/predict'
@@ -26,20 +27,23 @@ dp = Dispatcher()
 # Создаем базовый класс для объявления моделей
 Base = declarative_base()
 
+
 # Определяем модель для таблицы статистики
 class Statistics(Base):
     __tablename__ = 'statistics'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(Integer)
+    user_id = Column(BigInteger)
     request_date = Column(DateTime, default=datetime.utcnow)
     user_request = Column(String)
     has_error = Column(Boolean)
     error_message = Column(String)
 
+
 # Создаем подключение к базе данных
 DATABASE_URL = "postgresql://alekseev_db:alekseev_db@postgres/statistics_db"
 engine = create_engine(DATABASE_URL)
+
 
 def create_statistics(user_id, user_request, has_error=False, error_message=None):
     """
@@ -55,11 +59,14 @@ def create_statistics(user_id, user_request, has_error=False, error_message=None
     session.commit()
     session.close()
 
+
 # Создаем таблицы в базе данных
 Base.metadata.create_all(engine)
 
+
 # Создаем фабрику сессий для взаимодействия с базой данных
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
 
 @dp.message(Command('dropdatabase'))
 async def handle_drop_database(message: types.Message):
@@ -83,7 +90,8 @@ async def cmd_start(message: types.Message):
         "Привет! Я бот, созданный для того, чтобы помогать вам.\n"
         "/help - Получить справку о доступных действиях\n"
     )
-    create_statistics(user_id=message.from_user.id, user_request=f'/help')
+    create_statistics(user_id=message.from_user.id, user_request=f'/start')
+
 
 @dp.message(Command("help"))
 async def cmd_help(message: types.Message):
@@ -118,8 +126,8 @@ async def handle_predict(message: types.Message):
             'При выполнении запроса произошла ошибка. '
             'Проверьте корректность введенных данных. '
             'Пример корректного использования: /predict AAPL')
-        create_statistics(user_id=message.from_user.id, user_request=f'/predict {data["ticker"]}', has_error=True,
-                         error_message=response.text)
+        create_statistics(user_id=message.from_user.id, user_request=f'/predict {data["ticker"]}',
+                          has_error=True, error_message=response.text)
 
 
 @dp.message(Command('last'))
@@ -150,6 +158,7 @@ async def handle_last(message: types.Message):
             )
         create_statistics(user_id=message.from_user.id, user_request=f'/last {ticker}', has_error=True,
                           error_message=str(e))
+
 
 @dp.message(Command('info'))
 async def handle_info(message: types.Message):
@@ -190,25 +199,25 @@ async def handle_recoms(message: types.Message):
         data = stock.recommendations
 
         periods = []
-        strongBuys = []
+        strongbuys = []
         buys = []
         holds = []
         sells = []
-        strongSells = []
+        strongsells = []
 
         for period, values in data.iterrows():
             periods.append(period)
-            strongBuys.append(values['strongBuy'])
+            strongbuys.append(values['strongBuy'])
             buys.append(values['buy'])
             holds.append(values['hold'])
             sells.append(values['sell'])
-            strongSells.append(values['strongSell'])
+            strongsells.append(values['strongSell'])
 
-        strongBuys = strongBuys[::-1]
+        strongbuys = strongbuys[::-1]
         buys = buys[::-1]
         holds = holds[::-1]
         sells = sells[::-1]
-        strongSells = strongSells[::-1]
+        strongsells = strongsells[::-1]
 
         # Создаем цветовую карту
         colors = ['red', 'orange', 'yellow', 'lightgreen', 'green']
@@ -225,12 +234,12 @@ async def handle_recoms(message: types.Message):
 
         plt.figure(figsize=(8, 6))
 
-        plt.bar(periods, strongSells, color=cmap(0), label='Strong Sell')
-        plt.bar(periods, sells, bottom=strongSells, color=cmap(1), label='Sell')
-        plt.bar(periods, holds, bottom=[i + j for i, j in zip(strongSells, sells)], color=cmap(2), label='Hold')
-        plt.bar(periods, buys, bottom=[i + j + k for i, j, k in zip(strongSells, sells, holds)], color=cmap(3),
+        plt.bar(periods, strongsells, color=cmap(0), label='Strong Sell')
+        plt.bar(periods, sells, bottom=strongsells, color=cmap(1), label='Sell')
+        plt.bar(periods, holds, bottom=[i + j for i, j in zip(strongsells, sells)], color=cmap(2), label='Hold')
+        plt.bar(periods, buys, bottom=[i + j + k for i, j, k in zip(strongsells, sells, holds)], color=cmap(3),
                 label='Buy')
-        plt.bar(periods, strongBuys, bottom=[i + j + k + l for i, j, k, l in zip(strongSells, sells, holds, buys)],
+        plt.bar(periods, strongbuys, bottom=[i + j + k + l for i, j, k, l in zip(strongsells, sells, holds, buys)],
                 color=cmap(4), label='Strong Buy')
 
         plt.xlabel('Period')
@@ -246,19 +255,18 @@ async def handle_recoms(message: types.Message):
 
         # Добавляем метки данных
         for i in range(len(periods)):
-            total_height = strongSells[i] + sells[i] + holds[i] + buys[i] + strongBuys[i]
-            if strongSells[i] > 0:
-                plt.text(periods[i], strongSells[i] / 2, str(strongSells[i]), ha='center', va='center')
+            if strongsells[i] > 0:
+                plt.text(periods[i], strongsells[i] / 2, str(strongsells[i]), ha='center', va='center')
             if sells[i] > 0:
-                plt.text(periods[i], strongSells[i] + sells[i] / 2, str(sells[i]), ha='center', va='center')
+                plt.text(periods[i], strongsells[i] + sells[i] / 2, str(sells[i]), ha='center', va='center')
             if holds[i] > 0:
-                plt.text(periods[i], strongSells[i] + sells[i] + holds[i] / 2, str(holds[i]), ha='center', va='center')
+                plt.text(periods[i], strongsells[i] + sells[i] + holds[i] / 2, str(holds[i]), ha='center', va='center')
             if buys[i] > 0:
-                plt.text(periods[i], strongSells[i] + sells[i] + holds[i] + buys[i] / 2, str(buys[i]), ha='center',
+                plt.text(periods[i], strongsells[i] + sells[i] + holds[i] + buys[i] / 2, str(buys[i]), ha='center',
                          va='center')
-            if strongBuys[i] > 0:
-                plt.text(periods[i], strongSells[i] + sells[i] + holds[i] + buys[i] + strongBuys[i] / 2,
-                         str(strongBuys[i]), ha='center', va='center')
+            if strongbuys[i] > 0:
+                plt.text(periods[i], strongsells[i] + sells[i] + holds[i] + buys[i] + strongbuys[i] / 2,
+                         str(strongbuys[i]), ha='center', va='center')
 
         plt.tight_layout()
 
@@ -270,6 +278,7 @@ async def handle_recoms(message: types.Message):
         buffer_data = buffer.getvalue()
 
         photo = BufferedInputFile(buffer_data, "recommendations.png")
+        await message.answer("Публичная база данных:")
         await message.answer_photo(photo=photo)
         create_statistics(user_id=message.from_user.id, user_request=f'/recom {ticker}')
 
@@ -281,6 +290,7 @@ async def handle_recoms(message: types.Message):
             )
         create_statistics(user_id=message.from_user.id, user_request=f'/recom {ticker}', has_error=True,
                           error_message=str(e))
+
 
 @dp.message(Command('base'))
 async def handle_base(message: types.Message):
@@ -302,6 +312,7 @@ async def handle_base(message: types.Message):
             buffer_data = tmpfile.read()
 
             file_base = BufferedInputFile(buffer_data, "base.xlsx")
+            await message.answer("Публичная база данных:")
             await message.answer_document(file_base)
 
     except Exception as e:
