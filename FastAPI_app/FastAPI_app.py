@@ -64,7 +64,7 @@ def download_data(ticker="AAPL", num_days=730):
     downloaded_data.reset_index(inplace=True)
     # Бокс кокс
 
-    with open("lambda_val.pkl", 'rb') as file:
+    with open("model_data/lambda_val.pkl", 'rb') as file:
         lambda_v = pickle.load(file)
 
     # Бокс кокс
@@ -200,7 +200,7 @@ class GbModel(BaseEstimator, TransformerMixin):
         self.forecast = None
 
     def fit(self, x_predict=None, y_predict=None):
-        with open("GB_model.pkl", 'rb') as file:
+        with open("model_data/GB_model.pkl", 'rb') as file:
             self.model = pickle.load(file)
         return self
 
@@ -239,7 +239,7 @@ def main(ticker):
     # Прогноз с использованием pipeline
     forecast = pipeline.transform(data)
 
-    with open("lambda_val.pkl", 'rb') as file:
+    with open("model_data/lambda_val.pkl", 'rb') as file:
         lambda_box = pickle.load(file)
 
     forecast = scaler_model.inverse_transform(forecast.reshape(-1, 1)).reshape(1, -1)
