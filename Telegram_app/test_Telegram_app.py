@@ -3,6 +3,14 @@ from telethon.sync import TelegramClient
 from telethon.tl import types
 
 
+"""
+Перед запуском тестов необходимо поднять docker-compose
+Функция обращается в телеграм с тестового аккаунта и проверяет ответы бота
+Поэтому для входа на личный аккаунт нужны номер и код
+Функция для запуска: pytest test_Telegram_app.py
+"""
+
+
 @pytest.fixture
 def api_id():
     return 21773113
@@ -107,7 +115,3 @@ async def test_predict_command_response(api_id, api_hash):
     assert len(response_text) > 300
     assert "При выполнении запроса произошла ошибка" not in response_text
     assert "[]" not in response_text
-
-# pytest -s test_Telegram_app.py
-# pytest -k test_base_command_response
-# +79933681289

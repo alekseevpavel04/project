@@ -55,7 +55,7 @@ def download_data(ticker="AAPL", num_days=730):
 
     # Начальная дата, учитывая только торговые дни
     trading_days = nyse.schedule(start_date='1990-01-01', end_date=end_date)
-    trading_days = trading_days.iloc[-num_days:]
+    trading_days = trading_days.iloc[-num_days - 1:]
     start_date = trading_days.index[0].date()
 
     # Загрузка
