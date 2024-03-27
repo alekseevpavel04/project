@@ -278,7 +278,6 @@ async def handle_recoms(message: types.Message):
         buffer_data = buffer.getvalue()
 
         photo = BufferedInputFile(buffer_data, "recommendations.png")
-        await message.answer("Публичная база данных:")
         await message.answer_photo(photo=photo)
         create_statistics(user_id=message.from_user.id, user_request=f'/recom {ticker}')
 
@@ -312,7 +311,6 @@ async def handle_base(message: types.Message):
             buffer_data = tmpfile.read()
 
             file_base = BufferedInputFile(buffer_data, "base.xlsx")
-            await message.answer("Публичная база данных:")
             await message.answer_document(file_base)
 
     except Exception as e:

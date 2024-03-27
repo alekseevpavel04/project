@@ -1,5 +1,6 @@
 import pytest
 from telethon.sync import TelegramClient
+from telethon.tl import types
 
 
 @pytest.fixture
@@ -18,22 +19,25 @@ async def send_message_and_wait_response(api_id, api_hash, message):
         async for response in client.iter_messages('Project_Alekseev_test_bot', reverse=True):
             if response.text == message:
                 async for new_response in client.iter_messages('Project_Alekseev_test_bot', offset_id=response.id + 2):
-                    return new_response.text
+                    return new_response
 
 
 @pytest.mark.asyncio
 async def test_start_message_response(api_id, api_hash):
     response = await send_message_and_wait_response(api_id, api_hash, '/start')
+    response_text = response.text
+
     expected_response = ("Привет! Я бот, созданный для того, чтобы помогать вам.\n"
                          "/help - Получить справку о доступных действиях")
-    assert response == expected_response
-    assert "При выполнении запроса произошла ошибка" not in response, \
-        "Текст не должен содержать 'При выполнении запроса произошла ошибка'"
+    assert response_text == expected_response
+    assert "При выполнении запроса произошла ошибка" not in response_text
 
 
 @pytest.mark.asyncio
 async def test_help_message_response(api_id, api_hash):
     response = await send_message_and_wait_response(api_id, api_hash, '/help')
+    response_text = response.text
+
     expected_response = (
         "Список доступных команд:\n"
         "/help - Получить справку о доступных действиях\n"
@@ -44,52 +48,66 @@ async def test_help_message_response(api_id, api_hash):
         "/info ticker - Получить информацию о компании\n"
         "/recom ticker - Получить рекомендации экспертов"
     )
-    assert response.strip() == expected_response.strip()
-    assert "При выполнении запроса произошла ошибка" not in response, \
-        "Текст не должен содержать 'При выполнении запроса произошла ошибка'"
+    assert response_text.strip() == expected_response.strip()
+    assert "При выполнении запроса произошла ошибка" not in response_text
 
 
 @pytest.mark.asyncio
 async def test_base_command_response(api_id, api_hash):
     response = await send_message_and_wait_response(api_id, api_hash, '/base')
+    response_file = response.document
+    response_text = response.text
 
-    assert "При выполнении запроса произошла ошибка" not in response, \
-        "Текст не должен содержать 'При выполнении запроса произошла ошибка'"
+    assert type(response_file) == types.Document
+    assert "При выполнении запроса произошла ошибка" not in response_text
 
 
 @pytest.mark.asyncio
 async def test_info_command_response(api_id, api_hash):
     response = await send_message_and_wait_response(api_id, api_hash, '/info AAPL')
+    response_text = response.text
 
-    assert len(response) > 100, "Длина текста должна быть больше 100 символов"
-    assert "Название компании" in response, "Текст должен содержать 'Название компании'"
-    assert "При выполнении запроса произошла ошибка" not in response, \
-        "Текст не должен содержать 'При выполнении запроса произошла ошибка'"
+    assert len(response_text) > 1000
+    assert "Название компании:" in response_text
+    assert "Описание компании:" in response_text
+    assert "www." in response_text
+    assert "При выполнении запроса произошла ошибка" not in response_text
 
 
 @pytest.mark.asyncio
 async def test_recom_command_response(api_id, api_hash):
     response = await send_message_and_wait_response(api_id, api_hash, '/recom AAPL')
-    assert "При выполнении запроса произошла ошибка" not in response, \
-        "Текст не должен содержать 'При выполнении запроса произошла ошибка'"
+    response_photo = response.photo
+    response_text = response.text
+
+    assert type(response_photo) == types.Photo
+    assert "При выполнении запроса произошла ошибка" not in response_text
 
 
 @pytest.mark.asyncio
 async def test_last_command_response(api_id, api_hash):
     response = await send_message_and_wait_response(api_id, api_hash, '/last AAPL')
-    assert "Данные о последних торгах для" in response, "Текст  должен содержать 'Данные о последних торгах'"
-    assert "При выполнении запроса произошла ошибка" not in response, \
-        "Текст не должен содержать 'При выполнении запроса произошла ошибка'"
+    response_text = response.text
+
+    assert "Данные о последних торгах для" in response_text
+    assert "Метка времени" in response_text
+    assert "Previous Close price" in response_text
+    assert "Close price" in response_text
+    assert "Day's Range" in response_text
+    assert "MSK (UTC+3)" in response_text
+    assert "При выполнении запроса произошла ошибка" not in response_text
 
 
 @pytest.mark.asyncio
 async def test_predict_command_response(api_id, api_hash):
     response = await send_message_and_wait_response(api_id, api_hash, '/predict AAPL')
-    assert "Прогнозируемые значения:" in response, "Текст  должен содержать 'Прогнозируемые значения'"
-    assert len(response) > 100, "Длина текста должна быть больше 100 символов"
-    assert "При выполнении запроса произошла ошибка" not in response, \
-        "Текст не должен содержать 'При выполнении запроса произошла ошибка'"
+    response_text = response.text
+
+    assert "Прогнозируемые значения:" in response_text
+    assert len(response_text) > 300
+    assert "При выполнении запроса произошла ошибка" not in response_text
+    assert "[]" not in response_text
 
 # pytest -s test_Telegram_app.py
-# pytest -k test_last_command_response
+# pytest -k test_base_command_response
 # +79933681289
