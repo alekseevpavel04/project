@@ -9,6 +9,8 @@ services:
     depends_on:
       - fastapi_app
       - postgres
+    environment:
+      - TELEGRAM_TOKEN=${TELEGRAM_TOKEN}
     networks:
       - mynetwork
 

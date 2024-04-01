@@ -22,6 +22,7 @@ settings.py
 /Notebooks/GB_model.pkl
 /Notebooks/RF_model.pkl
 /Notebooks/lambda_val.pkl
+.env
 test.ipynb
 requirements.txt
 __pycache__/

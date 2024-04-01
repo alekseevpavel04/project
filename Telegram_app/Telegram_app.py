@@ -17,8 +17,12 @@ import pandas as pd
 import tempfile
 from sqlalchemy import text
 from sqlalchemy import BigInteger
+import os
+from dotenv import load_dotenv
 
-TELEGRAM_TOKEN = "6844280738:AAGGwtFpu7UvF-srORj2Az2E-IBWKG4vaPs"
+
+load_dotenv()
+TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
 FASTAPI_URL = 'http://fastapi_app:8000/predict'
 # FASTAPI_URL = 'http://127.0.0.1:8000/predict'
 bot = Bot(token=TELEGRAM_TOKEN)
