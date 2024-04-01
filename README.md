@@ -13,34 +13,31 @@
 #### Список участников: 
 	Алексеев Павел Владимирович
 #### Организация проекта: 
-
-📦 
-
-├─ FastAPI_app 				<- Директория приложения FastAPI (ML часть проекта)
-│  ├─ Dockerfile
-│  ├─ FastAPI_app.py			<- Приложение FastAPI
-│  ├─ model_data
-│  │  ├─ GB_model.pkl			<- Предобученная модель Градиентного бустинга
-│  │  └─ lambda_val.pkl			<- Параметр λ для трансформации Бокса-Кокса
-│  ├─ requirements.txt
-│  └─ test_FastAPI_app.py  		<- Тестирование приложения FastAPI
-│
-├─ Telegram_app				<- Директория Telegram бота
-│  ├─ Dockerfile
-│  ├─ Telegram_app.py			<- Приложение FastAPI
-│  ├─ requirements.txt
-│  └─ test_Telegram_app.py		<- Тестирование Telegram бота
-│
-└─ docker-compose.yaml
-│
-├─ Notebooks				<- Jupyter-ноутбуки
-│  ├─ EDA.ipynb				<- Разведочный анализ данных
-│  ├─ ML_model_analysis.ipynb		<- Обучение ML модели
-│
-├─ Presentations
-│  └─ ML_model_analysis.pdf		<- Обучение ML модели
-│
-├─ README.md
+	├─ FastAPI_app 				<- Директория приложения FastAPI (ML часть проекта)
+	│  ├─ Dockerfile
+	│  ├─ FastAPI_app.py			<- Приложение FastAPI
+	│  ├─ model_data
+	│  │  ├─ GB_model.pkl			<- Предобученная модель Градиентного бустинга
+	│  │  └─ lambda_val.pkl			<- Параметр λ для трансформации Бокса-Кокса
+	│  ├─ requirements.txt
+	│  └─ test_FastAPI_app.py  		<- Тестирование приложения FastAPI
+	│
+	├─ Telegram_app				<- Директория Telegram бота
+	│  ├─ Dockerfile
+	│  ├─ Telegram_app.py			<- Приложение FastAPI
+	│  ├─ requirements.txt
+	│  └─ test_Telegram_app.py		<- Тестирование Telegram бота
+	│
+	└─ docker-compose.yaml
+	│
+	├─ Notebooks				<- Jupyter-ноутбуки
+	│  ├─ EDA.ipynb				<- Разведочный анализ данных
+	│  ├─ ML_model_analysis.ipynb		<- Обучение ML модели
+	│
+	├─ Presentations
+	│  └─ ML_model_analysis.pdf		<- Обучение ML модели
+	│
+	├─ README.md				<- Описание проекта
 
 
 
