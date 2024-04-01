@@ -34,13 +34,13 @@
 
 #### Как запустить проект: 
 	Клонировать репозиторий:
-		1) git clone https://github.com/alekseevpavel04/project.git
+	 1) git clone https://github.com/alekseevpavel04/project.git
 	Заходим в папку project:
-	  	2) cd project
+	 2) cd project
 	Запускаем docker-compose:
-	  	3) docker-compose up
+	 3) docker-compose up
 	Бот работает по ссылке:
-		4) https://t.me/Project_Alekseev_test_bot
+	 4) https://t.me/Project_Alekseev_test_bot
   
 
 ### Пример работы бота Telegram
