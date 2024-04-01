@@ -28,7 +28,7 @@
 	│  ├─ requirements.txt
 	│  └─ test_Telegram_app.py		<- Тестирование Telegram бота
 	│
-	└─ docker-compose.yaml
+	├─ docker-compose.yaml
 	│
 	├─ Notebooks				<- Jupyter-ноутбуки
 	│  ├─ EDA.ipynb				<- Разведочный анализ данных
@@ -37,7 +37,7 @@
 	├─ Presentations
 	│  └─ ML_model_analysis.pdf		<- Обучение ML модели
 	│
-	├─ README.md				<- Описание проекта
+	└─ README.md				<- Описание проекта
 
 
 
