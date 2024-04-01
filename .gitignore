@@ -18,6 +18,10 @@ settings.py
 /.ipynb_checkpoints
 /Notebooks/.ipynb_checkpoints
 /Notebooks/ML_model_analysis_test.ipynb
+/Notebooks/data2.csv
+/Notebooks/GB_model.pkl
+/Notebooks/RF_model.pkl
+/Notebooks/lambda_val.pkl
 test.ipynb
 requirements.txt
 __pycache__/
