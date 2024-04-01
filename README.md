@@ -36,7 +36,7 @@
 > git clone https://github.com/alekseevpavel04/project.git
 - Заходим в папку project:
 > cd project
-- Создаем файл окружения и указываем там токен:
+- Создаем файл окружения с указанием токена:
 > echo "TELEGRAM_TOKEN=YOUR_TG_TOKEN" > .env
 - Запускаем docker-compose:
 > docker-compose up
