@@ -31,15 +31,15 @@
 	└─ README.md				<- Описание проекта
 
 ## Как запустить проект: 
+
 - Клонировать репозиторий:
 > git clone https://github.com/alekseevpavel04/project.git
 - Заходим в папку project:
 > cd project
+- Создаем файл окружения:
+> echo "TELEGRAM_TOKEN=YOUR_TG_TOKEN" > .env
 - Запускаем docker-compose:
 > docker-compose up
-- Бот работает по ссылке:
-> https://t.me/Project_Alekseev_test_bot
-  
 
 ## Пример работы бота Telegram
 ![example](https://github.com/alekseevpavel04/project/assets/48567496/ad3804ee-2641-4501-8cd3-d8b9e2d233a2)
