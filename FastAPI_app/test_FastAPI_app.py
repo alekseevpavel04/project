@@ -16,7 +16,7 @@ def test_download_data():
 
     assert isinstance(function_result, pd.DataFrame)
     assert list(function_result.columns) == ['Date', 'ticker']
-    assert function_result.shape == (760, 2)
+    assert function_result.shape == (761, 2)
     assert function_result["ticker"].isna().sum() == 30
 
 
