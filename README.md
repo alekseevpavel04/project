@@ -84,5 +84,13 @@
 - Запускаем docker-compose:
 > docker-compose up
 
+## Тестирование: 
+- Приложение FastAPI_app:
+> Запустить "pytest" из папки FastAPI_app
+- Приложение Telegram_app:
+> Запустить "pytest -s" из папки Telegram_app
+Важно 1: Тестирование Telegram_app запросит логин и код от тестового аккаунта (подойдет любой)
+Важно 2: Не забудьте создать виртуальное окружение и установить необходимые библиотеки
+
 ## Пример работы бота Telegram
 ![example](https://github.com/alekseevpavel04/project/assets/48567496/ad3804ee-2641-4501-8cd3-d8b9e2d233a2)
