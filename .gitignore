@@ -26,5 +26,5 @@ settings.py
 test.ipynb
 requirements.txt
 __pycache__/
-/Telegram_app/.pytest_cache
-/Telegram_app/anon.session
+/telegram_bot/.pytest_cache
+/telegram_bot/anon.session

@@ -1,16 +1,21 @@
+"""
+Этот модуль отвечает за метод /predict у бота
+"""
+
+import pickle
+from datetime import datetime, timedelta
+
 import uvicorn
+import yfinance as yf
+import pandas as pd
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-import pickle
-import pandas as pd
+from scipy.special import inv_boxcox
+from scipy.stats import boxcox
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.pipeline import Pipeline
-import yfinance as yf
-from datetime import datetime, timedelta
-from pandas_market_calendars import get_calendar
-from scipy.stats import boxcox
-from scipy.special import inv_boxcox
 from sklearn.preprocessing import MinMaxScaler
+from pandas_market_calendars import get_calendar
 
 # В режиме отладки нужен этот:
 # from pandas.tseries.offsets import BDay
@@ -21,10 +26,10 @@ app = FastAPI()
 
 class DataRequest(BaseModel):
     """
-    Модель запроса данных.
+    Data request model.
 
     Attributes:
-        ticker (str): Тикер акции.
+        ticker (str): Stock ticker.
     """
     ticker: str
 
@@ -32,14 +37,14 @@ class DataRequest(BaseModel):
 # Загрузка данных
 def download_data(ticker="AAPL", num_days=730):
     """
-    Загружает и предварительно обрабатывает данные о ценах на акции.
+    Downloads and preprocesses stock price data.
 
     Args:
-        ticker (str): Тикер акции.
-        num_days (int): Количество дней исторических данных.
+        ticker (str): Stock ticker.
+        num_days (int): Number of historical data days.
 
     Returns:
-        pandas.DataFrame: Загруженные и обработанные данные.
+        pandas.DataFrame: Downloaded and preprocessed data.
     """
 
     # Получаем биржевой календарь для NYSE (New York Stock Exchange)
@@ -48,10 +53,8 @@ def download_data(ticker="AAPL", num_days=730):
     # Сегодняшняя дата
     end_date = datetime.now().date() - timedelta(days=1)
 
-    """
     # Для отладки
     # end_date = datetime.now().date() - BDay(30)
-    """
 
     # Начальная дата, учитывая только торговые дни
     trading_days = nyse.schedule(start_date='1990-01-01', end_date=end_date)
@@ -75,29 +78,37 @@ def download_data(ticker="AAPL", num_days=730):
     # Определяем биржевой календарь для выбранного рынка
     exchange_calendar = pd.tseries.offsets.BDay()
     # Получаем 30 рабочих дней после последней даты в данных
-    additional_dates = pd.date_range(downloaded_data['Date'].max() + pd.Timedelta(days=1), periods=30,
-                                     freq=exchange_calendar)
+    additional_dates = pd.date_range(
+        downloaded_data['Date'].max() + pd.Timedelta(days=1),
+        periods=30,
+        freq=exchange_calendar
+    )
     # Создаем DataFrame с новыми датами и NaN значениями для 'ticker'
-    additional_data = pd.DataFrame({'Date': additional_dates, 'ticker': [float('nan')] * len(additional_dates)})
+    additional_data = pd.DataFrame(
+        {'Date': additional_dates,
+         'ticker': [float('nan')] * len(additional_dates)}
+    )
     # Объединяем данные
-    downloaded_data = pd.concat([downloaded_data, additional_data], ignore_index=True)
+    downloaded_data = pd.concat(
+        [downloaded_data, additional_data],
+        ignore_index=True)
 
     return downloaded_data
 
 
 def generate_lagged_features(data, target_cols, lags, windows, metrics):
     """
-    Генерирует отстающие признаки на основе заданных метрик.
+    Generates lagged features based on specified metrics.
 
     Args:
-        data (pandas.DataFrame): Исходные данные.
-        target_cols (list): Список столбцов для генерации признаков.
-        lags (list): Список задержек (лагов).
-        windows (list): Список окон для вычисления статистик.
-        metrics (list): Список метрик для вычисления статистик.
+        data (pandas.DataFrame): Original data.
+        target_cols (list): List of columns for feature generation.
+        lags (list): List of delays (lags).
+        windows (list): List of windows for computing statistics.
+        metrics (list): List of metrics for computing statistics.
 
     Returns:
-        pandas.DataFrame: Датафрейм с добавленными лаговыми признаками.
+        pandas.DataFrame: DataFrame with added lagged features.
     """
 
     result_data = data.copy()
@@ -111,23 +122,20 @@ def generate_lagged_features(data, target_cols, lags, windows, metrics):
                     column_name = f"{target_col}_window{window}_lag{lag}_{metric}"
 
                     if metric == "mean":
-                        new_columns[column_name] = data[target_col].shift(lag).rolling(window).mean()
+                        new_columns[column_name] = (
+                            data[target_col].shift(lag).rolling(window).mean())
                     elif metric == "var":
-                        new_columns[column_name] = data[target_col].shift(lag).rolling(window).var()
+                        new_columns[column_name] = (
+                            data[target_col].shift(lag).rolling(window).var())
                     elif metric == "median":
-                        new_columns[column_name] = data[target_col].shift(lag).rolling(window).quantile(0.5)
-                    elif metric == "q1":
-                        new_columns[column_name] = data[target_col].shift(lag).rolling(window).quantile(0.25)
-                    elif metric == "q3":
-                        new_columns[column_name] = data[target_col].shift(lag).rolling(window).quantile(0.75)
+                        new_columns[column_name] = (
+                            data[target_col].shift(lag).rolling(window).quantile(0.5))
                     elif metric == "percentile_90":
-                        new_columns[column_name] = data[target_col].shift(lag).rolling(window).quantile(0.9)
-                    elif metric == "percentile_80":
-                        new_columns[column_name] = data[target_col].shift(lag).rolling(window).quantile(0.8)
-                    elif metric == "percentile_20":
-                        new_columns[column_name] = data[target_col].shift(lag).rolling(window).quantile(0.2)
+                        new_columns[column_name] = (
+                            data[target_col].shift(lag).rolling(window).quantile(0.9))
                     elif metric == "percentile_10":
-                        new_columns[column_name] = data[target_col].shift(lag).rolling(window).quantile(0.1)
+                        new_columns[column_name] = (
+                            data[target_col].shift(lag).rolling(window).quantile(0.1))
 
     new_columns_df = pd.DataFrame(new_columns)
     result_data = pd.concat([result_data, new_columns_df], axis=1)
@@ -137,21 +145,32 @@ def generate_lagged_features(data, target_cols, lags, windows, metrics):
 
 class DataPreprocessor(BaseEstimator, TransformerMixin):
     """
-    Предобработчик данных.
+    Data preprocessor.
 
-    Обрабатывает данные перед подачей их на вход модели.
+    Processes data before feeding it into the model.
 
     Attributes:
-        forecast (pandas DataFrame): Готовые для прогнозирования данные
+        forecast (pandas DataFrame): Data ready for forecasting.
     """
-
     def __init__(self):
         self.forecast = None
 
     def fit(self, x_val=None, y_val=None):
+        """
+        Fits the model.
+        """
         return self
 
     def transform(self, x_matrix):
+        """
+        Transforms the input features.
+
+        Args:
+            x_matrix: Input feature matrix.
+
+        Returns:
+            pandas.DataFrame: Transformed feature matrix.
+        """
         # Применяем функцию generate_lagged_features
         x_matrix_lags = generate_lagged_features(
             x_matrix, target_cols=["ticker"],
@@ -167,16 +186,17 @@ class DataPreprocessor(BaseEstimator, TransformerMixin):
         x_matrix_lags = pd.get_dummies(x_matrix_lags, columns=["day_of_week"], drop_first=True)
 
         # Удаляем полностью пустые столбцы
-        columns_to_drop = ['ticker_window1_lag30_var', 'ticker_window1_lag45_var', 'ticker_window1_lag60_var',
-                           'ticker_window1_lag75_var', 'ticker_window1_lag90_var', 'ticker_window1_lag180_var',
-                           'ticker_window1_lag365_var', 'ticker_window1_lag30_percentile_90',
-                           'ticker_window1_lag45_percentile_90', 'ticker_window1_lag60_percentile_90',
-                           'ticker_window1_lag75_percentile_90', 'ticker_window1_lag90_percentile_90',
-                           'ticker_window1_lag180_percentile_90', 'ticker_window1_lag365_percentile_90',
-                           'ticker_window1_lag30_percentile_10', 'ticker_window1_lag45_percentile_10',
-                           'ticker_window1_lag60_percentile_10', 'ticker_window1_lag75_percentile_10',
-                           'ticker_window1_lag90_percentile_10', 'ticker_window1_lag180_percentile_10',
-                           'ticker_window1_lag365_percentile_10']
+        columns_to_drop = [
+            'ticker_window1_lag30_var', 'ticker_window1_lag45_var', 'ticker_window1_lag60_var',
+            'ticker_window1_lag75_var', 'ticker_window1_lag90_var', 'ticker_window1_lag180_var',
+            'ticker_window1_lag365_var', 'ticker_window1_lag30_percentile_90',
+            'ticker_window1_lag45_percentile_90', 'ticker_window1_lag60_percentile_90',
+            'ticker_window1_lag75_percentile_90', 'ticker_window1_lag90_percentile_90',
+            'ticker_window1_lag180_percentile_90', 'ticker_window1_lag365_percentile_90',
+            'ticker_window1_lag30_percentile_10', 'ticker_window1_lag45_percentile_10',
+            'ticker_window1_lag60_percentile_10', 'ticker_window1_lag75_percentile_10',
+            'ticker_window1_lag90_percentile_10', 'ticker_window1_lag180_percentile_10',
+            'ticker_window1_lag365_percentile_10']
         x_matrix_lags = x_matrix_lags.drop(columns=columns_to_drop)
 
         # Удаляем более ненужные строки и столбцы
@@ -188,11 +208,11 @@ class DataPreprocessor(BaseEstimator, TransformerMixin):
 # Применение модели
 class GbModel(BaseEstimator, TransformerMixin):
     """
-    Модель градиентного бустинга.
+    Gradient Boosting model.
 
     Attributes:
-        model: Предобученная модель.
-        forecast (pandas.DataFrame): Данные для прогноза
+        model: Pre-trained model.
+        forecast (pandas.DataFrame): Data for forecasting.
     """
 
     def __init__(self):
@@ -200,28 +220,42 @@ class GbModel(BaseEstimator, TransformerMixin):
         self.forecast = None
 
     def fit(self, x_predict=None, y_predict=None):
+        """
+        Loads the model.
+
+        Returns:
+            self: Fitted model
+        """
         with open("model_data/GB_model.pkl", 'rb') as file:
             self.model = pickle.load(file)
         return self
 
     def transform(self, x_predict):
+        """
+        Transforms the input features.
+
+        Args:
+            x_predict: Input features for prediction.
+
+        Returns:
+            numpy.ndarray: Forecasted data.
+        """
         self.forecast = self.model.predict(x_predict)
         return self.forecast
 
 
-# Пайплайн
 def main(ticker):
     """
-    Основная функция для выполнения прогнозирования.
+    Main function for performing forecasting.
 
     Args:
-        ticker (str): Тикер акции.
+        ticker (str): Stock ticker.
 
     Returns:
-        numpy.ndarray: Прогнозные данные.
+        numpy.ndarray: Forecasted data.
     """
 
-    # Загрузка данных
+    # Load data
     data = download_data(ticker)
     scaler_model = MinMaxScaler(feature_range=(1, 2))
     scaler_model.fit(data["ticker"].values.reshape(-1, 1))
@@ -242,7 +276,8 @@ def main(ticker):
     with open("model_data/lambda_val.pkl", 'rb') as file:
         lambda_box = pickle.load(file)
 
-    forecast = scaler_model.inverse_transform(forecast.reshape(-1, 1)).reshape(1, -1)
+    forecast = (
+        scaler_model.inverse_transform(forecast.reshape(-1, 1)).reshape(1, -1))
     forecast = inv_boxcox(forecast, lambda_box)
 
     return forecast
@@ -251,13 +286,13 @@ def main(ticker):
 @app.post("/predict")
 def predict(data: DataRequest):
     """
-    Обрабатывает POST-запрос и возвращает прогнозные данные.
+    Processes POST request and returns forecast data.
 
     Args:
-        data (DataRequest): Данные запроса.
+        data (DataRequest): Request data.
 
     Returns:
-        dict: Прогнозные данные.
+        dict: Forecast data.
     """
 
     try:
@@ -265,11 +300,10 @@ def predict(data: DataRequest):
         forecast_list = forecast.tolist()[0]
         return forecast_list
     except Exception as e:
-        print(str(e))
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
 
-# uvicorn FastAPI_app:app --reload
+# uvicorn fastapi_app:app --reload

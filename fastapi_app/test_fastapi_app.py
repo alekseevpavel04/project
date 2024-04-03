@@ -1,22 +1,22 @@
 import pandas as pd
 import numpy as np
-import FastAPI_app
+import fastapi_app
 import itertools
 import pytest
 from collections import namedtuple
 
 
 """
-Функция для запуска: pytest test_FastAPI_app.py
+Функция для запуска: pytest test_fastapi_app.py
 """
 
 
 def test_download_data():
-    function_result = FastAPI_app.download_data(ticker="AAPL", num_days=730)
+    function_result = fastapi_app.download_data(ticker="AAPL", num_days=730)
 
     assert isinstance(function_result, pd.DataFrame)
     assert list(function_result.columns) == ['Date', 'ticker']
-    assert function_result.shape == (761, 2)
+    assert function_result.shape == (760, 2)
     assert function_result["ticker"].isna().sum() == 30
 
 
@@ -34,23 +34,23 @@ def test_generate_lagged_features(sample_data1):
     target_cols = ['ticker']
     lags = [30, 45, 60, 75, 90, 180, 365]
     windows = [1, 2, 3, 4, 5, 10, 20, 30, 60, 90, 180, 365]
-    metrics = ['mean', 'var', 'median', 'q1', 'q3', 'percentile_90', 'percentile_80', 'percentile_20', 'percentile_10']
+    metrics = ['mean', 'var', 'median', 'percentile_90', 'percentile_10']
 
     expected_columns = [
         f"{target_col}_window{window}_lag{lag}_{metric}"
         for target_col, window, lag, metric in itertools.product(target_cols, windows, lags, metrics)
     ]
 
-    function_result = FastAPI_app.generate_lagged_features(sample_data1, target_cols, lags, windows, metrics)
+    function_result = fastapi_app.generate_lagged_features(sample_data1, target_cols, lags, windows, metrics)
 
     assert isinstance(function_result, pd.DataFrame)
     assert all(col in function_result.columns for col in expected_columns)
-    assert function_result.shape == (760, 758)
-    assert function_result.isna().sum().sum() == 143519
+    assert function_result.shape == (760, 422)
+    assert function_result.isna().sum().sum() == 81735
 
 
 def test_datapreprocessor(sample_data1):
-    class_result = FastAPI_app.DataPreprocessor().transform(sample_data1)
+    class_result = fastapi_app.DataPreprocessor().transform(sample_data1)
 
     assert isinstance(class_result, pd.DataFrame)
     assert class_result.shape == (30, 321)
@@ -91,7 +91,7 @@ def sample_data2():
 
 
 def test_gbmodel(sample_data2):
-    class_model = FastAPI_app.GbModel().fit()
+    class_model = fastapi_app.GbModel().fit()
     class_result = class_model.transform(sample_data2)
 
     assert isinstance(class_result, np.ndarray)
@@ -101,7 +101,7 @@ def test_gbmodel(sample_data2):
 
 
 def test_main():
-    function_result = FastAPI_app.main('AAPL')
+    function_result = fastapi_app.main('AAPL')
 
     assert isinstance(function_result, np.ndarray)
     assert function_result.shape == (1, 30)
@@ -112,7 +112,7 @@ def test_main():
 def test_predict():
     TickerData = namedtuple('TickerData', ['ticker'])
     data = TickerData(ticker='AAPL')
-    function_result = FastAPI_app.predict(data)
+    function_result = fastapi_app.predict(data)
 
     assert isinstance(function_result, list)
     assert len(function_result) == 30

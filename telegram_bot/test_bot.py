@@ -1,13 +1,13 @@
 import pytest
 from telethon.sync import TelegramClient
 from telethon.tl import types
-
+import asyncio
 
 """
 Перед запуском тестов необходимо поднять docker-compose
 Функция обращается в телеграм с тестового аккаунта и проверяет ответы бота
 Поэтому для входа на личный аккаунт нужны номер и код
-Функция для запуска: pytest test_Telegram_app.py
+Функция для запуска: pytest test_bot.py
 """
 
 
@@ -24,6 +24,7 @@ def api_hash():
 async def send_message_and_wait_response(api_id, api_hash, message):
     async with TelegramClient('anon', api_id, api_hash, system_version="4.16.30-vxCUSTOM") as client:
         await client.send_message('Project_Alekseev_test_bot', message)
+        await asyncio.sleep(3)
         async for response in client.iter_messages('Project_Alekseev_test_bot', reverse=True):
             if response.text == message:
                 async for new_response in client.iter_messages('Project_Alekseev_test_bot', offset_id=response.id + 2):
@@ -65,6 +66,8 @@ async def test_base_command_response(api_id, api_hash):
     response = await send_message_and_wait_response(api_id, api_hash, '/base')
     response_file = response.document
     response_text = response.text
+    print("Response File:", response_file)
+    print("Response Text:", response_text)
 
     assert type(response_file) == types.Document
     assert "При выполнении запроса произошла ошибка" not in response_text
