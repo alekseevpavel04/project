@@ -1,8 +1,8 @@
 """
-Перед запуском тестов необходимо поднять docker-compose
-Необходимо указать api_id и api_hash своего бота (чтобы писать ему)
-Функция обращается в телеграм с тестового аккаунта и проверяет ответы бота
-Поэтому для входа на личный аккаунт нужны номер и код
+Перед запуском тестов необходимо поднять docker-compose,
+Необходимо указать api_id и api_hash своего бота,
+Функция обращается в телеграм с тестового аккаунта и проверяет ответы бота,
+Поэтому для входа на личный аккаунт нужны номер и код,
 Функция для запуска: pytest test_bot.py
 """
 
@@ -60,6 +60,7 @@ async def send_message_and_wait_response(api_id: int, api_hash: str, message: st
                         offset_id=response.id + 2):
                     return new_response
 
+
 @pytest.mark.asyncio
 async def test_start_message_response(api_id: int, api_hash: str):
     """
@@ -76,7 +77,6 @@ async def test_start_message_response(api_id: int, api_hash: str):
                          "/help - Получить справку о доступных действиях")
     assert response_text == expected_response
     assert "При выполнении запроса произошла ошибка" not in response_text
-
 
 
 @pytest.mark.asyncio
@@ -103,7 +103,6 @@ async def test_help_message_response(api_id: int, api_hash: str):
     )
     assert response_text.strip() == expected_response.strip()
     assert "При выполнении запроса произошла ошибка" not in response_text
-
 
 
 @pytest.mark.asyncio
@@ -180,7 +179,6 @@ async def test_last_command_response(api_id: int, api_hash: str):
     assert "Day's Range" in response_text
     assert "MSK (UTC+3)" in response_text
     assert "При выполнении запроса произошла ошибка" not in response_text
-
 
 
 @pytest.mark.asyncio
