@@ -28,4 +28,5 @@ requirements.txt
 __pycache__/
 /telegram_bot/.pytest_cache
 /telegram_bot/anon.session
-anon.session!/telegram_bot/requirements.txt
+!/telegram_bot/requirements.txt
+
