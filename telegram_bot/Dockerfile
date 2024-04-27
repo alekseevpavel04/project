@@ -1,5 +1,5 @@
 # Use the official Ubuntu image from the Docker Hub
-FROM ubuntu:latest
+FROM ubuntu:23.10
 
 # Install system packages
 RUN apt-get update \
@@ -14,7 +14,7 @@ WORKDIR /app
 COPY requirements.txt .
 
 # Install required Python dependencies
-RUN pip3 install --no-cache-dir -r requirements.txt
+RUN pip3 install --no-cache-dir -r requirements.txt --break-system-packages
 
 # Copy the current directory contents into the container at /app
 COPY . .
