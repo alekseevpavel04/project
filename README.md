@@ -27,9 +27,9 @@
 	│
 	├─ telegram_bot				<- Директория Telegram бота
 	│  ├─ Dockerfile
-	│  ├─ bot.py			<- Приложение FastAPI
+	│  ├─ bot.py				<- Приложение FastAPI
 	│  ├─ requirements.txt
-	│  └─ test_bot.py		<- Тестирование Telegram бота
+	│  └─ test_bot.py			<- Тестирование Telegram бота
 	│
 	├─ docker-compose.yaml
 	│
