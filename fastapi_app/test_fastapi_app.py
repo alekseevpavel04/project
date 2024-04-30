@@ -155,24 +155,45 @@ def test_main():
     This function tests the main function with a specified ticker.
 
     """
-    function_result = fastapi_app.main('AAPL')
+    function_result_1 = fastapi_app.main('AAPL',"ML")
+    function_result_2 = fastapi_app.main('AAPL', "ML")
 
-    assert isinstance(function_result, np.ndarray)
-    assert function_result.shape == (1, 30)
-    assert function_result.mean() != 0
-    assert function_result.var() != 0
+    assert isinstance(function_result_1, np.ndarray)
+    assert function_result_1.shape == (1, 30)
+    assert function_result_1.mean() != 0
+    assert function_result_1.var() != 0
+    assert isinstance(function_result_2, np.ndarray)
+    assert function_result_2.shape == (1, 30)
+    assert function_result_2.mean() != 0
+    assert function_result_2.var() != 0
 
 
-def test_predict():
+def test_predict_ml():
     """
-    Test for the predict function.
+    Test for the predict_ml function.
 
     This function tests the predict function with a specified ticker.
 
     """
     TickerData = namedtuple('TickerData', ['ticker'])
     data = TickerData(ticker='AAPL')
-    function_result = fastapi_app.predict(data)
+    function_result = fastapi_app.predict_ml(data)
+
+    assert isinstance(function_result, list)
+    assert len(function_result) == 30
+    assert np.mean(function_result) != 0
+    assert np.var(function_result) != 0
+
+def test_predict_dl():
+    """
+    Test for the predict_dl function.
+
+    This function tests the predict function with a specified ticker.
+
+    """
+    TickerData = namedtuple('TickerData', ['ticker'])
+    data = TickerData(ticker='AAPL')
+    function_result = fastapi_app.predict_dl(data)
 
     assert isinstance(function_result, list)
     assert len(function_result) == 30

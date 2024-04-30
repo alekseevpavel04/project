@@ -28,5 +28,9 @@ requirements.txt
 __pycache__/
 /telegram_bot/.pytest_cache
 /telegram_bot/anon.session
-!/telegram_bot/requirements.txt
-
+/telegram_bot/requirements.txt
+/test_field/
+/fastapi_app/.coverage
+/telegram_bot/.coverage
+/anon.session
+/fastapi_app/.ipynb_checkpoints/

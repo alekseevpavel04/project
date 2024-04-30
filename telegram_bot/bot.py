@@ -28,7 +28,8 @@ from aiogram.types import BufferedInputFile
 
 load_dotenv()
 TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
-FASTAPI_URL = 'http://fastapi_app:8000/predict'
+FASTAPI_URL_ML = 'http://fastapi_app:8000/predict_ml'
+FASTAPI_URL_DL = 'http://fastapi_app:8000/predict_dl'
 # FASTAPI_URL = 'http://127.0.0.1:8000/predict'
 bot = Bot(token=TELEGRAM_TOKEN)
 dp = Dispatcher()
@@ -156,7 +157,8 @@ async def cmd_help(message: types.Message):
         "/base - Загрузить публичную базу данных \n\n"
         "Следующие команды выполняются для акции. "
         "Например, ticker для Apple - AAPL. \n\n"
-        "/predict ticker - Получить ML прогноз на 30 торговых дней\n"
+        "/predict_ml ticker - Получить ML прогноз на 30 торговых дней\n"
+        "/predict_dl ticker - Получить DL прогноз на 30 торговых дней\n"
         "/last ticker - Получить последние данные о торгах\n"
         "/info ticker - Получить информацию о компании\n"
         "/recom ticker - Получить рекомендации экспертов\n"
@@ -168,30 +170,65 @@ async def cmd_help(message: types.Message):
     )
 
 
-@dp.message(Command('predict'))
-async def handle_predict(message: types.Message):
+@dp.message(Command('predict_ml'))
+async def handle_predict_ml(message: types.Message):
     """
-    Handler for the predict command.
+    Handler for the predict_ml command.
 
     Args:
         message (types.Message): Message containing the command.
     """
-    command_args = message.text[len('/predict '):].split(";")
+    command_args = message.text[len('/predict_ml '):].split(";")
     data = {"ticker": command_args[0].strip().upper()}
-    response = requests.post(FASTAPI_URL, json=data, timeout=10)
+    response = requests.post(FASTAPI_URL_ML, json=data, timeout=10)
 
     if response.status_code == 200:
         result = response.json()
         await message.answer(f"Прогнозируемые значения: \n {result}")
-        create_statistics(user_id=message.from_user.id, user_request=f'/predict {data["ticker"]}')
+        create_statistics(
+            user_id=message.from_user.id,
+            user_request=f'/predict_ml {data["ticker"]}'
+        )
     else:
         await message.answer(
             'При выполнении запроса произошла ошибка. '
             'Проверьте корректность введенных данных. '
-            'Пример корректного использования: /predict AAPL')
+            'Пример корректного использования: /predict_ml AAPL')
         create_statistics(
             user_id=message.from_user.id,
-            user_request=f'/predict {data["ticker"]}',
+            user_request=f'/predict_ml {data["ticker"]}',
+            has_error=True,
+            error_message=response.text
+        )
+
+
+@dp.message(Command('predict_dl'))
+async def handle_predict_dl(message: types.Message):
+    """
+    Handler for the predict_dl command.
+
+    Args:
+        message (types.Message): Message containing the command.
+    """
+    command_args = message.text[len('/predict_dl '):].split(";")
+    data = {"ticker": command_args[0].strip().upper()}
+    response = requests.post(FASTAPI_URL_DL, json=data, timeout=10)
+
+    if response.status_code == 200:
+        result = response.json()
+        await message.answer(f"Прогнозируемые значения: \n {result}")
+        create_statistics(
+            user_id=message.from_user.id,
+            user_request=f'/predict_dl {data["ticker"]}'
+        )
+    else:
+        await message.answer(
+            'При выполнении запроса произошла ошибка. '
+            'Проверьте корректность введенных данных. '
+            'Пример корректного использования: /predict_dl AAPL')
+        create_statistics(
+            user_id=message.from_user.id,
+            user_request=f'/predict_dl {data["ticker"]}',
             has_error=True,
             error_message=response.text
         )

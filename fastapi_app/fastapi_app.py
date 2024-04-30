@@ -1,10 +1,11 @@
 """
-Этот модуль отвечает за метод /predict у бота
+Этот модуль отвечает за метод /predict_ml и /predict_dl у бота
 """
 
 import pickle
 from datetime import datetime, timedelta
-
+import torch
+import torch.nn as nn
 import uvicorn
 import yfinance as yf
 import pandas as pd
@@ -16,7 +17,8 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import MinMaxScaler
 from pandas_market_calendars import get_calendar
-
+import os
+os.environ["PYTHONWARNINGS"] = "ignore"
 # В режиме отладки нужен этот:
 # from pandas.tseries.offsets import BDay
 
@@ -54,7 +56,7 @@ def download_data(ticker="AAPL", num_days=730):
     end_date = datetime.now().date() - timedelta(days=1)
 
     # Для отладки
-    # end_date = datetime.now().date() - BDay(30)
+    #end_date = datetime.now().date() - BDay(30)
 
     # Начальная дата, учитывая только торговые дни
     trading_days = nyse.schedule(start_date='1990-01-01', end_date=end_date)
@@ -201,11 +203,10 @@ class DataPreprocessor(BaseEstimator, TransformerMixin):
 
         # Удаляем более ненужные строки и столбцы
         x_matrix_lags = x_matrix_lags.drop(columns=["ticker", "Date"])
+        x_matrix_lags = x_matrix_lags.astype(float)
         self.forecast = x_matrix_lags.tail(30)
         return self.forecast
 
-
-# Применение модели
 class GbModel(BaseEstimator, TransformerMixin):
     """
     Gradient Boosting model.
@@ -244,7 +245,83 @@ class GbModel(BaseEstimator, TransformerMixin):
         return self.forecast
 
 
-def main(ticker):
+class LstmModel(BaseEstimator, TransformerMixin):
+    """
+    LSTM  model.
+
+    Attributes:
+        model: Pre-trained model.
+        forecast (pandas.DataFrame): Data for forecasting.
+    """
+
+    def __init__(self):
+        self.model = None
+        self.forecast = None
+
+    def fit(self, x_predict=None, y_predict=None):
+        """
+        Loads the model.
+
+        Returns:
+            self: Fitted model
+        """
+        state_dict = torch.load(
+            'model_data/trained_model_lstm.pth',
+            map_location=torch.device('cpu')
+        )
+        self.model = Net()
+        self.model.load_state_dict(state_dict)
+        self.model.eval()
+        return self
+
+    def transform(self, x_predict):
+        """
+        Transforms the input features.
+
+        Args:
+            x_predict: Input features for prediction.
+
+        Returns:
+            numpy.ndarray: Forecasted data.
+        """
+        x_predict = x_predict.values
+        x_predict_tensor = torch.from_numpy(x_predict).float()
+
+        with torch.no_grad():
+            self.forecast = self.model(x_predict_tensor)
+        return self.forecast
+
+class Net(nn.Module):
+    def __init__(self, input_size=319, hidden_size=64, num_layers=5, output_size=1):
+        super(Net, self).__init__()
+        self.hidden_size = hidden_size
+        self.num_layers = num_layers
+
+        self.fc0 = nn.Linear(input_size, 128)
+        self.relu0 = nn.ReLU()
+        self.lstm = nn.LSTM(128, hidden_size, num_layers, batch_first=True, dropout=0.2)
+        self.fc1 = nn.Linear(hidden_size, 32)
+        self.relu1 = nn.ReLU()
+        self.fc2 = nn.Linear(32, output_size)
+
+    def forward(self, x):
+        # Инициализация скрытого состояния и состояния ячейки LSTM
+        h0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size).to(x.device)
+        c0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size).to(x.device)
+
+        # Получение вывода
+        out = self.fc0(x)
+        out = self.relu0(out)
+        out = out.view(out.size(0), 1, -1)
+        out, _ = self.lstm(out, (h0, c0))
+        out = self.fc1(out[:, -1, :])
+        out = self.relu1(out)
+        out = self.fc2(out)
+
+        return out
+
+
+def main(ticker, model):
     """
     Main function for performing forecasting.
 
@@ -257,15 +334,25 @@ def main(ticker):
 
     # Load data
     data = download_data(ticker)
-    scaler_model = MinMaxScaler(feature_range=(1, 2))
+    if model == "ML":
+        scaler_model = MinMaxScaler(feature_range=(1, 2))
+    elif model == "DL":
+        scaler_model = MinMaxScaler(feature_range=(0, 1))
+    else:
+        return "Model is not implemented"
     scaler_model.fit(data["ticker"].values.reshape(-1, 1))
     data["ticker"] = scaler_model.transform(data["ticker"].values.reshape(-1, 1))
 
-    # Определение pipeline
-    pipeline = Pipeline([
-        ('preprocessor', DataPreprocessor()),
-        ('model', GbModel())
-    ])
+    if model == "ML":
+        pipeline = Pipeline([
+            ('preprocessor', DataPreprocessor()),
+            ('model', GbModel())
+        ])
+    elif model == "DL":
+        pipeline = Pipeline([
+            ('preprocessor', DataPreprocessor()),
+            ('model', LstmModel())
+        ])
 
     # Обучение pipeline на тренировочных данных
     pipeline.fit(data)
@@ -283,8 +370,8 @@ def main(ticker):
     return forecast
 
 
-@app.post("/predict")
-def predict(data: DataRequest):
+@app.post("/predict_ml")
+def predict_ml(data: DataRequest):
     """
     Processes POST request and returns forecast data.
 
@@ -296,12 +383,30 @@ def predict(data: DataRequest):
     """
 
     try:
-        forecast = main(data.ticker)
+        forecast = main(data.ticker,"ML")
         forecast_list = forecast.tolist()[0]
         return forecast_list
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
+@app.post("/predict_dl")
+def predict_dl(data: DataRequest):
+    """
+    Processes POST request and returns forecast data.
+
+    Args:
+        data (DataRequest): Request data.
+
+    Returns:
+        dict: Forecast data.
+    """
+
+    try:
+        forecast = main(data.ticker,"DL")
+        forecast_list = forecast.tolist()[0]
+        return forecast_list
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

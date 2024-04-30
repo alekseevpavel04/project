@@ -95,11 +95,13 @@ async def test_help_message_response(api_id: int, api_hash: str):
         "Список доступных команд:\n"
         "/help - Получить справку о доступных действиях\n"
         "/base - Загрузить публичную базу данных \n\n"
-        "Следующие команды выполняются для акции. Например, ticker для Apple - AAPL. \n\n"
-        "/predict ticker - Получить ML прогноз на 30 торговых дней\n"
+        "Следующие команды выполняются для акции. "
+        "Например, ticker для Apple - AAPL. \n\n"
+        "/predict_ml ticker - Получить ML прогноз на 30 торговых дней\n"
+        "/predict_dl ticker - Получить DL прогноз на 30 торговых дней\n"
         "/last ticker - Получить последние данные о торгах\n"
         "/info ticker - Получить информацию о компании\n"
-        "/recom ticker - Получить рекомендации экспертов"
+        "/recom ticker - Получить рекомендации экспертов\n"
     )
     assert response_text.strip() == expected_response.strip()
     assert "При выполнении запроса произошла ошибка" not in response_text
@@ -182,15 +184,33 @@ async def test_last_command_response(api_id: int, api_hash: str):
 
 
 @pytest.mark.asyncio
-async def test_predict_command_response(api_id: int, api_hash: str):
+async def test_predict_ml_command_response(api_id: int, api_hash: str):
     """
-    Test to check response after sending '/predict AAPL' command.
+    Test to check response after sending '/predict_ml AAPL' command.
 
     Args:
         api_id (int): The API ID.
         api_hash (str): The API hash.
     """
-    response = await send_message_and_wait_response(api_id, api_hash, '/predict AAPL')
+    response = await send_message_and_wait_response(api_id, api_hash, '/predict_ml AAPL')
+    response_text = response.text
+
+    assert "Прогнозируемые значения:" in response_text
+    assert len(response_text) > 300
+    assert "При выполнении запроса произошла ошибка" not in response_text
+    assert "[]" not in response_text
+
+
+@pytest.mark.asyncio
+async def test_predict_dl_command_response(api_id: int, api_hash: str):
+    """
+    Test to check response after sending '/predict_dl AAPL' command.
+
+    Args:
+        api_id (int): The API ID.
+        api_hash (str): The API hash.
+    """
+    response = await send_message_and_wait_response(api_id, api_hash, '/predict_dl AAPL')
     response_text = response.text
 
     assert "Прогнозируемые значения:" in response_text
