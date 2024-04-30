@@ -95,4 +95,4 @@
 	Важно 3: Не забудьте создать виртуальное окружение и установить необходимые библиотеки
 
 ## Пример работы бота Telegram
-![example](https://github.com/alekseevpavel04/project/assets/48567496/0e498f1c-ecb8-47fe-abb5-918f38b552e1)
+![example](https://github.com/alekseevpavel04/project/assets/48567496/62c323da-90a8-41ca-8704-83787ac4557f)
